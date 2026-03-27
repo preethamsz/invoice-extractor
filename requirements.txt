@@ -1,0 +1,14 @@
+flask>=3.0.0
+groq>=0.9.0
+pymupdf>=1.23.0
+openpyxl>=3.1.0
+Pillow>=10.0.0
+
+# Install only the providers you want to use:
+# pip install openai              → OpenAI GPT-4o
+# pip install google-generativeai → Google Gemini
+# pip install anthropic           → Claude
+# pip install openai              → NVIDIA (uses openai client)
+# pip install openai              → DeepSeek (uses openai client)
+# pip install mistralai           → Mistral
+# pip install cohere              → Cohere

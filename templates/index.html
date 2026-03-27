@@ -1,0 +1,1680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Invoice Extractor · Multi AI Provider</title>
+
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#e63946" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="InvoiceAI" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="apple-touch-icon" href="/static/icon-192.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png" />
+  <link rel="icon" type="image/png" sizes="512x512" href="/static/icon-512.png" />
+
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&family=Manrope:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #080810;
+      --surface: #0f0f1a;
+      --surface2: #161625;
+      --surface3: #1e1e30;
+      --border: #252538;
+      --accent: #e63946;
+      --accent2: #ff8c69;
+      --accent3: #4ecb8d;
+      --text: #eeeef5;
+      --muted: #7070a0;
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Manrope', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 70% 50% at 10% 0%, rgba(230,57,70,0.08) 0%, transparent 55%),
+        radial-gradient(ellipse 50% 40% at 90% 100%, rgba(78,203,141,0.05) 0%, transparent 55%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Grid bg */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 52px 24px 80px;
+    }
+
+    /* ── HEADER ── */
+    header {
+      text-align: center;
+      margin-bottom: 60px;
+      animation: fadeUp 0.6s ease both;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(230,57,70,0.1);
+      border: 1px solid rgba(230,57,70,0.25);
+      color: var(--accent);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 7px 16px;
+      border-radius: 100px;
+      margin-bottom: 22px;
+    }
+
+    .badge-dot {
+      width: 6px; height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(40px, 7vw, 68px);
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      margin-bottom: 16px;
+    }
+
+    h1 .highlight {
+      color: var(--accent);
+      position: relative;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 300;
+      max-width: 520px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    /* ── STEP INDICATOR ── */
+    .steps-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      margin-bottom: 40px;
+      animation: fadeUp 0.6s ease 0.1s both;
+    }
+
+    .step-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .step-num {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: var(--surface2);
+      border: 2px solid var(--border);
+      color: var(--muted);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s;
+    }
+
+    .step-item.active .step-num {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+      box-shadow: 0 0 16px rgba(230,57,70,0.4);
+    }
+
+    .step-item.done .step-num {
+      background: var(--accent3);
+      border-color: var(--accent3);
+      color: white;
+    }
+
+    .step-label {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+
+    .step-item.active .step-label { color: var(--text); }
+    .step-item.done .step-label { color: var(--accent3); }
+
+    .step-line {
+      width: 40px;
+      height: 2px;
+      background: var(--border);
+      margin: 0 8px;
+    }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px;
+      margin-bottom: 20px;
+      animation: fadeUp 0.6s ease both;
+      transition: border-color 0.3s;
+    }
+
+    .card:hover { border-color: rgba(230,57,70,0.2); }
+    .card.active-card { border-color: rgba(230,57,70,0.35); }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .card-num {
+      width: 28px; height: 28px;
+      background: rgba(230,57,70,0.12);
+      border: 1px solid rgba(230,57,70,0.3);
+      border-radius: 8px;
+      color: var(--accent);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .card-line {
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── INPUTS ── */
+    .key-row {
+      display: flex;
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .input-wrap {
+      position: relative;
+      flex: 1;
+    }
+
+    .input-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      width: 16px; height: 16px;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      padding: 14px 14px 14px 44px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      height: 50px;
+    }
+
+    input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(230,57,70,0.12);
+    }
+
+    .toggle-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: var(--radius);
+      padding: 0 18px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 12px;
+      font-family: 'Manrope', sans-serif;
+      font-weight: 600;
+      height: 50px;
+      white-space: nowrap;
+    }
+
+    .toggle-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    .helper-text {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 10px;
+    }
+
+    .helper-text a { color: var(--accent); text-decoration: none; }
+    .helper-text a:hover { text-decoration: underline; }
+
+    /* ── UPLOAD TABS ── */
+    .upload-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--muted);
+      font-family: 'Manrope', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .tab-btn.active {
+      background: rgba(230,57,70,0.1);
+      border-color: rgba(230,57,70,0.4);
+      color: var(--accent);
+    }
+
+    .tab-btn:hover:not(.active) {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── DROP ZONE ── */
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: 16px;
+      padding: 44px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.25s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .drop-zone:hover, .drop-zone.dragover {
+      border-color: var(--accent);
+      background: rgba(230,57,70,0.04);
+    }
+
+    .drop-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .drop-icon {
+      width: 56px; height: 56px;
+      background: rgba(230,57,70,0.1);
+      border: 1px solid rgba(230,57,70,0.25);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+      color: var(--accent);
+    }
+
+    .drop-title { font-size: 16px; font-weight: 600; margin-bottom: 6px; font-family: 'Syne', sans-serif; }
+    .drop-hint { font-size: 13px; color: var(--muted); }
+
+    /* ── FILE PREVIEW ── */
+    .file-preview {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      margin-top: 14px;
+    }
+
+    .file-preview.show { display: flex; }
+    .file-preview svg { color: var(--accent3); flex-shrink: 0; }
+    .file-name { font-family: 'JetBrains Mono', monospace; font-size: 12px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .file-remove { color: var(--muted); cursor: pointer; transition: color 0.2s; font-size: 20px; line-height: 1; }
+    .file-remove:hover { color: var(--accent); }
+
+    /* ── PDF PREVIEW THUMBNAILS ── */
+    .pdf-pages {
+      display: none;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .pdf-pages.show { display: flex; }
+
+    .page-thumb {
+      position: relative;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.2s;
+      width: 100px;
+    }
+
+    .page-thumb:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .page-thumb.selected { border-color: var(--accent3); box-shadow: 0 0 12px rgba(78,203,141,0.3); }
+
+    .page-thumb img { width: 100%; display: block; }
+
+    .page-label {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0,0,0,0.7);
+      color: white;
+      font-size: 10px;
+      text-align: center;
+      padding: 3px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .page-check {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 18px; height: 18px;
+      background: var(--accent3);
+      border-radius: 50%;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 10px;
+    }
+
+    .page-thumb.selected .page-check { display: flex; }
+
+    .select-all-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 12px;
+      cursor: pointer;
+      font-family: 'Manrope', sans-serif;
+      transition: all 0.2s;
+      margin-top: 12px;
+    }
+
+    .select-all-btn:hover { border-color: var(--accent3); color: var(--accent3); }
+
+    /* ── BUTTONS ── */
+    .btn-primary {
+      width: 100%;
+      padding: 18px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: var(--radius);
+      font-family: 'Syne', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.25s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      letter-spacing: 0.02em;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #ff4d5a;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 36px rgba(230,57,70,0.4);
+    }
+
+    .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+    .btn-secondary {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: var(--radius);
+      padding: 12px 20px;
+      font-family: 'Manrope', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+    .btn-success {
+      background: rgba(78,203,141,0.12);
+      border: 1px solid rgba(78,203,141,0.3);
+      color: var(--accent3);
+      border-radius: var(--radius);
+      padding: 12px 20px;
+      font-family: 'Manrope', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-success:hover { background: rgba(78,203,141,0.2); }
+
+    /* ── SPINNER ── */
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+
+    /* ── INFO / ERROR BOXES ── */
+    .info-box {
+      background: rgba(230,57,70,0.07);
+      border: 1px solid rgba(230,57,70,0.2);
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin-bottom: 16px;
+      font-size: 13px;
+      color: var(--accent2);
+      line-height: 1.6;
+    }
+
+    .info-box a { color: var(--accent); }
+
+    .error-box {
+      background: rgba(240,100,119,0.1);
+      border: 1px solid rgba(240,100,119,0.3);
+      border-radius: 10px;
+      padding: 14px 18px;
+      color: #f06477;
+      font-size: 13px;
+      display: none;
+      margin-top: 14px;
+      align-items: flex-start;
+      gap: 10px;
+      line-height: 1.5;
+    }
+
+    .error-box.show { display: flex; }
+
+    /* ── PROGRESS ── */
+    .progress-wrap {
+      display: none;
+      margin: 20px 0;
+    }
+
+    .progress-wrap.show { display: block; }
+
+    .progress-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .progress-step {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      transition: all 0.3s;
+      opacity: 0.4;
+    }
+
+    .progress-step.active {
+      opacity: 1;
+      border-color: var(--accent);
+      background: rgba(230,57,70,0.06);
+    }
+
+    .progress-step.done {
+      opacity: 1;
+      border-color: var(--accent3);
+      background: rgba(78,203,141,0.06);
+    }
+
+    .progress-icon {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: var(--surface3);
+      border: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 13px;
+      transition: all 0.3s;
+    }
+
+    .progress-step.active .progress-icon {
+      border-color: var(--accent);
+      background: rgba(230,57,70,0.15);
+      animation: pulse-border 1.5s infinite;
+    }
+
+    .progress-step.done .progress-icon {
+      border-color: var(--accent3);
+      background: rgba(78,203,141,0.15);
+    }
+
+    .progress-text { font-size: 13px; font-weight: 500; }
+    .progress-sub { font-size: 11px; color: var(--muted); margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+
+    /* ── RESULTS ── */
+    #results { display: none; }
+
+    .results-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 40px 0 24px;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .results-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 30px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .results-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* ── RESULT SECTIONS ── */
+    .result-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 16px;
+      animation: slideIn 0.4s ease both;
+    }
+
+    .section-header {
+      padding: 14px 22px;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    /* Non-tabular grid */
+    .fields-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    }
+
+    .field {
+      padding: 16px 22px;
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .field-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+
+    .field-value {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      word-break: break-word;
+      line-height: 1.4;
+    }
+
+    .field-value.null-val { color: var(--muted); font-style: italic; font-size: 13px; font-weight: 400; }
+
+    /* Tabular table */
+    .table-wrap { overflow-x: auto; }
+
+    table { width: 100%; border-collapse: collapse; }
+    thead tr { background: var(--surface2); }
+
+    th {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 14px 22px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 14px 22px;
+      font-size: 14px;
+      border-bottom: 1px solid var(--border);
+      font-weight: 400;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:nth-child(even) td { background: rgba(255,255,255,0.015); }
+    tr:hover td { background: rgba(230,57,70,0.04); }
+    .mono { font-family: 'JetBrains Mono', monospace; font-size: 13px; }
+
+    /* Totals */
+    .totals-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 22px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .totals-row.grand {
+      background: rgba(230,57,70,0.06);
+      border-color: rgba(230,57,70,0.2);
+    }
+
+    .total-label { color: var(--muted); font-size: 13px; font-weight: 500; }
+    .total-val { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 600; }
+    .totals-row.grand .total-label { color: var(--text); font-size: 14px; font-weight: 700; }
+    .totals-row.grand .total-val { color: var(--accent); font-size: 20px; }
+
+    /* ── ANIMATIONS ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+    @keyframes pulse-border {
+      0%,100% { box-shadow: 0 0 0 0 rgba(230,57,70,0.4); }
+      50%      { box-shadow: 0 0 0 6px rgba(230,57,70,0); }
+    }
+
+    @media (max-width: 600px) {
+      .key-row { flex-direction: column; }
+      .steps-bar { gap: 4px; }
+      .step-line { width: 20px; }
+      .results-actions { width: 100%; }
+      .btn-secondary, .btn-success { flex: 1; justify-content: center; }
+    }
+
+    /* ── PROVIDER CARDS ── */
+    .provider-card {
+      background: var(--surface2);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+      position: relative;
+    }
+
+    .provider-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    .provider-card.active {
+      border-color: var(--accent);
+      background: rgba(230,57,70,0.08);
+      box-shadow: 0 0 16px rgba(230,57,70,0.2);
+    }
+
+    .p-logo {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 8px;
+      font-size: 18px;
+    }
+
+    .p-name {
+      font-family: 'Syne', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+
+    .p-model {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .p-badge {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      padding: 2px 8px;
+      border-radius: 100px;
+      display: inline-block;
+    }
+
+    .p-badge.free {
+      background: rgba(78,203,141,0.15);
+      color: var(--accent3);
+      border: 1px solid rgba(78,203,141,0.3);
+    }
+
+    .p-badge.paid {
+      background: rgba(255,140,105,0.15);
+      color: var(--accent2);
+      border: 1px solid rgba(255,140,105,0.3);
+    }
+  </style>
+</head>
+<body>
+
+<!-- PWA Install Banner -->
+<div id="installBanner" style="
+  display:none; position:fixed; bottom:20px; left:50%;
+  transform:translateX(-50%); background:#0f0f1a;
+  border:1px solid #e63946; border-radius:16px;
+  padding:16px 20px; z-index:9999; align-items:center;
+  gap:14px; box-shadow:0 8px 32px rgba(230,57,70,0.3);
+  max-width:360px; width:90%;
+">
+  <span style="font-size:28px">📱</span>
+  <div style="flex:1">
+    <div style="color:#eeeef5;font-weight:700;font-size:14px;font-family:'Segoe UI',sans-serif">
+      Install Invoice Extractor
+    </div>
+    <div style="color:#7070a0;font-size:12px;margin-top:2px;font-family:'Segoe UI',sans-serif">
+      Add to home screen for quick access
+    </div>
+  </div>
+  <button onclick="installApp()" style="
+    background:#e63946;color:white;border:none;
+    border-radius:8px;padding:8px 16px;font-size:13px;
+    font-weight:700;cursor:pointer;white-space:nowrap;
+  ">Install</button>
+  <button onclick="dismissBanner()" style="
+    background:transparent;color:#7070a0;
+    border:none;cursor:pointer;font-size:20px;padding:4px;
+  ">×</button>
+</div>
+<div class="container">
+
+  <!-- HEADER -->
+  <header>
+    <div class="badge"><div class="badge-dot"></div> Groq AI · Llama 4 · v2.0</div>
+    <h1>Invoice<br><span class="highlight">Extractor</span></h1>
+    <p class="subtitle">PDF to image conversion, real-time AI extraction, tabular & non-tabular output, Excel download — all in one flow.</p>
+  </header>
+
+  <!-- STEP INDICATOR -->
+  <div class="steps-bar">
+    <div class="step-item active" id="step1">
+      <div class="step-num">1</div>
+      <div class="step-label">API Key</div>
+    </div>
+    <div class="step-line"></div>
+    <div class="step-item" id="step2">
+      <div class="step-num">2</div>
+      <div class="step-label">Upload</div>
+    </div>
+    <div class="step-line"></div>
+    <div class="step-item" id="step3">
+      <div class="step-num">3</div>
+      <div class="step-label">Extract</div>
+    </div>
+    <div class="step-line"></div>
+    <div class="step-item" id="step4">
+      <div class="step-num">4</div>
+      <div class="step-label">Download</div>
+    </div>
+  </div>
+
+  <!-- CARD 1: PROVIDER + API KEY -->
+  <div class="card active-card" id="card1" style="animation-delay:0s">
+    <div class="card-header">
+      <div class="card-num">01</div>
+      <div class="card-title">Choose AI Provider</div>
+      <div class="card-line"></div>
+    </div>
+
+    <!-- Provider Grid -->
+    <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:10px; margin-bottom:16px;">
+
+      <div class="provider-card active" data-provider="groq" onclick="selectProvider(this)">
+        <div class="p-logo" style="background:#f55036">⚡</div>
+        <div class="p-name">Groq</div>
+        <div class="p-model">Llama 4</div>
+        <div class="p-badge free">FREE</div>
+      </div>
+
+      <div class="provider-card" data-provider="gemini" onclick="selectProvider(this)">
+        <div class="p-logo" style="background:#4285f4">✦</div>
+        <div class="p-name">Gemini</div>
+        <div class="p-model">2.0 Flash</div>
+        <div class="p-badge free">FREE</div>
+      </div>
+
+      <div class="provider-card" data-provider="openai" onclick="selectProvider(this)">
+        <div class="p-logo" style="background:#10a37f">◆</div>
+        <div class="p-name">OpenAI</div>
+        <div class="p-model">GPT-4o</div>
+        <div class="p-badge paid">PAID</div>
+      </div>
+
+      <div class="provider-card" data-provider="anthropic" onclick="selectProvider(this)">
+        <div class="p-logo" style="background:#cc785c">△</div>
+        <div class="p-name">Claude</div>
+        <div class="p-model">Opus 4.5</div>
+        <div class="p-badge paid">PAID</div>
+      </div>
+
+      <div class="provider-card" data-provider="nvidia" onclick="selectProvider(this)">
+        <div class="p-logo" style="background:#76b900">▣</div>
+        <div class="p-name">NVIDIA</div>
+        <div class="p-model">Llama 4</div>
+        <div class="p-badge free">FREE</div>
+      </div>
+
+      <div class="provider-card" data-provider="deepseek" onclick="selectProvider(this)">
+        <div class="p-logo" style="background:#4d6bfe">🐋</div>
+        <div class="p-name">DeepSeek</div>
+        <div class="p-model">Chat</div>
+        <div class="p-badge free">FREE</div>
+      </div>
+
+      <div class="provider-card" data-provider="mistral" onclick="selectProvider(this)">
+        <div class="p-logo" style="background:#ff7000">🌀</div>
+        <div class="p-name">Mistral</div>
+        <div class="p-model">Pixtral</div>
+        <div class="p-badge paid">PAID</div>
+      </div>
+
+      <div class="provider-card" data-provider="cohere" onclick="selectProvider(this)">
+        <div class="p-logo" style="background:#39594d">◉</div>
+        <div class="p-name">Cohere</div>
+        <div class="p-model">Command R+</div>
+        <div class="p-badge free">FREE</div>
+      </div>
+
+    </div>
+
+    <!-- Provider info bar -->
+    <div id="providerInfo" style="
+      background:var(--surface2); border:1px solid var(--border);
+      border-radius:10px; padding:12px 16px; margin-bottom:16px;
+      font-size:12px; color:var(--muted); line-height:1.7;
+    "></div>
+
+    <!-- API Key -->
+    <div class="key-row">
+      <div class="input-wrap">
+        <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+        </svg>
+        <input type="password" id="apiKey" placeholder="Paste your API key here..." autocomplete="off" oninput="onKeyInput()" />
+      </div>
+      <button class="toggle-btn" onclick="toggleKey()">Show</button>
+    </div>
+    <p class="helper-text">
+      Get your key at → <a id="keyLink" href="https://console.groq.com/keys" target="_blank">console.groq.com/keys</a> · Never stored.
+    </p>
+  </div>
+
+  <!-- CARD 2: UPLOAD -->
+  <div class="card" id="card2" style="animation-delay:0.08s">
+    <div class="card-header">
+      <div class="card-num">02</div>
+      <div class="card-title">Upload Invoice</div>
+      <div class="card-line"></div>
+    </div>
+
+    <!-- TABS -->
+    <div class="upload-tabs">
+      <button class="tab-btn active" id="tab-pdf" onclick="switchTab('pdf')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        PDF Invoice
+      </button>
+      <button class="tab-btn" id="tab-img" onclick="switchTab('img')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        Image Invoice
+      </button>
+    </div>
+
+    <!-- PDF TAB -->
+    <div class="tab-panel active" id="panel-pdf">
+      <div class="info-box">
+        📄 Upload a PDF invoice — we'll convert each page to an image automatically, then send it to Groq AI for extraction.
+      </div>
+
+      <div class="drop-zone" id="dropPdf">
+        <input type="file" id="pdfInput" accept="application/pdf" onchange="handlePdf(this)" />
+        <div class="drop-icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+        </div>
+        <div class="drop-title">Drop PDF here</div>
+        <div class="drop-hint">PDF invoices · Auto-converted to images</div>
+      </div>
+
+      <div class="file-preview" id="pdfPreview">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <span class="file-name" id="pdfName">—</span>
+        <span class="file-remove" onclick="clearPdf()">×</span>
+      </div>
+
+      <!-- Converting progress -->
+      <div id="pdfConverting" style="display:none; margin-top:14px; padding:14px 18px; background:var(--surface2); border:1px solid var(--border); border-radius:10px; font-size:13px; color:var(--muted); display:none; align-items:center; gap:10px;">
+        <div class="spinner" style="display:block; border-top-color:var(--accent);"></div>
+        <span>Converting PDF to images...</span>
+      </div>
+
+      <!-- Page thumbnails -->
+      <div class="pdf-pages" id="pdfPages"></div>
+      <button class="select-all-btn" id="selectAllBtn" style="display:none" onclick="toggleSelectAll()">✓ Select All Pages</button>
+    </div>
+
+    <!-- IMAGE TAB -->
+    <div class="tab-panel" id="panel-img">
+      <div class="drop-zone" id="dropImg">
+        <input type="file" id="imgInput" accept="image/jpeg,image/jpg,image/png,image/webp" onchange="handleImg(this)" />
+        <div class="drop-icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+        </div>
+        <div class="drop-title">Drop image here</div>
+        <div class="drop-hint">JPG, PNG, WEBP · Max 10MB</div>
+      </div>
+
+      <div class="file-preview" id="imgPreview">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        <span class="file-name" id="imgName">—</span>
+        <span class="file-remove" onclick="clearImg()">×</span>
+      </div>
+    </div>
+
+    <!-- Error -->
+    <div class="error-box" id="uploadError">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span id="uploadErrorText"></span>
+    </div>
+  </div>
+
+  <!-- EXTRACT BUTTON -->
+  <button class="btn-primary" id="extractBtn" onclick="extract()">
+    <div class="spinner" id="spinner"></div>
+    <svg id="btnIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+    </svg>
+    <span id="btnText">Extract Invoice Data</span>
+  </button>
+
+  <!-- PROGRESS -->
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-steps">
+      <div class="progress-step" id="prog1">
+        <div class="progress-icon">🔑</div>
+        <div>
+          <div class="progress-text">Authenticating with Groq</div>
+          <div class="progress-sub">Validating API key...</div>
+        </div>
+      </div>
+      <div class="progress-step" id="prog2">
+        <div class="progress-icon">📤</div>
+        <div>
+          <div class="progress-text">Sending invoice to AI</div>
+          <div class="progress-sub">Uploading image to Groq Llama 4...</div>
+        </div>
+      </div>
+      <div class="progress-step" id="prog3">
+        <div class="progress-icon">🧠</div>
+        <div>
+          <div class="progress-text">AI analyzing invoice</div>
+          <div class="progress-sub">Extracting all fields...</div>
+        </div>
+      </div>
+      <div class="progress-step" id="prog4">
+        <div class="progress-icon">✅</div>
+        <div>
+          <div class="progress-text">Processing results</div>
+          <div class="progress-sub">Building tabular & non-tabular output...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results">
+    <div class="results-header">
+      <div class="results-title">Extracted Data</div>
+      <div class="results-actions">
+        <button class="btn-secondary" onclick="copyJSON()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy JSON
+        </button>
+        <button class="btn-success" id="downloadBtn" onclick="downloadExcel()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download Excel
+        </button>
+      </div>
+    </div>
+    <div id="resultsContent"></div>
+  </div>
+
+</div>
+
+<script>
+  // ── State ──────────────────────────────────────────────
+  let extractedData   = null;
+  let pdfImages       = [];
+  let selectedPages   = new Set();
+  let imgFile         = null;
+  let activeTab       = 'pdf';
+  let activeProvider  = 'groq';
+
+  // ── Provider Data ──────────────────────────────────────
+  const PROVIDERS = {
+    groq:      { name:'Groq',     model:'Llama 4',       free:true,  key_url:'https://console.groq.com/keys',                    placeholder:'gsk_...',    info:'⚡ Fastest inference · Free: 30 req/min · Best for quick extraction' },
+    gemini:    { name:'Gemini',   model:'2.0 Flash',     free:true,  key_url:'https://aistudio.google.com/app/apikey',           placeholder:'AIza...',    info:'✦ Google AI · Free: 1000 req/day · Great image understanding' },
+    openai:    { name:'OpenAI',   model:'GPT-4o',        free:false, key_url:'https://platform.openai.com/api-keys',             placeholder:'sk-...',     info:'◆ Most capable · Pay per use · Best accuracy for complex invoices' },
+    anthropic: { name:'Claude',   model:'Opus 4.5',      free:false, key_url:'https://console.anthropic.com/settings/api-keys', placeholder:'sk-ant-...', info:'△ Anthropic · Pay per use · Excellent structured data extraction' },
+    nvidia:    { name:'NVIDIA',   model:'Llama 4',       free:true,  key_url:'https://build.nvidia.com/explore/discover',        placeholder:'nvapi-...', info:'▣ NVIDIA NIM · Free tier available · GPU accelerated inference' },
+    deepseek:  { name:'DeepSeek', model:'Chat',          free:true,  key_url:'https://platform.deepseek.com/api_keys',           placeholder:'sk-...',     info:'🐋 DeepSeek · Very affordable · Strong reasoning capabilities' },
+    mistral:   { name:'Mistral',  model:'Pixtral Large', free:false, key_url:'https://console.mistral.ai/api-keys',              placeholder:'...',        info:'🌀 Mistral AI · Pay per use · Pixtral specializes in image understanding' },
+    cohere:    { name:'Cohere',   model:'Command R+',    free:true,  key_url:'https://dashboard.cohere.com/api-keys',            placeholder:'...',        info:'◉ Cohere · Free trial available · Good for document extraction' },
+  };
+
+  function selectProvider(el) {
+    document.querySelectorAll('.provider-card').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    activeProvider = el.dataset.provider;
+    updateProviderInfo();
+  }
+
+  function updateProviderInfo() {
+    const p = PROVIDERS[activeProvider];
+    if (!p) return;
+    document.getElementById('providerInfo').innerHTML = `
+      <strong style="color:var(--text)">${p.name} · ${p.model}</strong>
+      &nbsp;
+      <span style="color:${p.free ? 'var(--accent3)':'var(--accent2)'};font-size:11px">
+        ${p.free ? '✅ Free tier' : '💳 Paid'}
+      </span><br>
+      <span>${p.info}</span>
+    `;
+    document.getElementById('apiKey').placeholder = p.placeholder || 'Paste your API key here...';
+    try {
+      document.getElementById('keyLink').href = p.key_url;
+      document.getElementById('keyLink').textContent = new URL(p.key_url).hostname;
+    } catch(e) {}
+  }
+
+  updateProviderInfo();
+
+  // ── Tab switching ──────────────────────────────────────
+  function switchTab(tab) {
+    activeTab = tab;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    document.getElementById('panel-' + tab).classList.add('active');
+    hideUploadError();
+  }
+
+  // ── API Key ────────────────────────────────────────────
+  function toggleKey() {
+    const inp = document.getElementById('apiKey');
+    const btn = document.querySelector('.toggle-btn');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+    btn.textContent = inp.type === 'password' ? 'Show' : 'Hide';
+  }
+
+  function onKeyInput() {
+    const val = document.getElementById('apiKey').value.trim();
+    setStep(val ? 2 : 1);
+  }
+
+  // ── PDF handling ───────────────────────────────────────
+  function handlePdf(input) {
+    const file = input.files[0];
+    if (!file) return;
+    document.getElementById('pdfName').textContent = file.name;
+    document.getElementById('pdfPreview').classList.add('show');
+    hideUploadError();
+    convertPdf(file);
+  }
+
+  async function convertPdf(file) {
+    const converting = document.getElementById('pdfConverting');
+    converting.style.display = 'flex';
+    document.getElementById('pdfPages').classList.remove('show');
+    document.getElementById('selectAllBtn').style.display = 'none';
+    pdfImages = [];
+    selectedPages.clear();
+
+    const formData = new FormData();
+    formData.append('pdf', file);
+
+    try {
+      const res  = await fetch('/convert-pdf', { method: 'POST', body: formData });
+      const json = await res.json();
+      converting.style.display = 'none';
+
+      if (json.error) {
+        showUploadError(json.error);
+        return;
+      }
+
+      pdfImages = json.images.map((b64, i) => ({ b64, page: i + 1 }));
+      renderPageThumbs();
+      setStep(3);
+    } catch (e) {
+      converting.style.display = 'none';
+      showUploadError('Failed to convert PDF. Is the server running?');
+    }
+  }
+
+  function renderPageThumbs() {
+    const wrap = document.getElementById('pdfPages');
+    wrap.innerHTML = '';
+    pdfImages.forEach(({ b64, page }) => {
+      const div = document.createElement('div');
+      div.className = 'page-thumb';
+      div.dataset.page = page;
+      div.innerHTML = `
+        <img src="data:image/png;base64,${b64}" />
+        <div class="page-label">Page ${page}</div>
+        <div class="page-check">✓</div>`;
+      div.onclick = () => togglePage(div, page);
+      wrap.appendChild(div);
+      // Auto-select page 1
+      if (page === 1) { togglePage(div, page); }
+    });
+    wrap.classList.add('show');
+    document.getElementById('selectAllBtn').style.display = 'inline-flex';
+  }
+
+  function togglePage(el, page) {
+    if (selectedPages.has(page)) {
+      selectedPages.delete(page);
+      el.classList.remove('selected');
+    } else {
+      selectedPages.add(page);
+      el.classList.add('selected');
+    }
+  }
+
+  function toggleSelectAll() {
+    const allSelected = selectedPages.size === pdfImages.length;
+    if (allSelected) {
+      selectedPages.clear();
+      document.querySelectorAll('.page-thumb').forEach(el => el.classList.remove('selected'));
+      document.getElementById('selectAllBtn').textContent = '✓ Select All Pages';
+    } else {
+      pdfImages.forEach(({ page }) => selectedPages.add(page));
+      document.querySelectorAll('.page-thumb').forEach(el => el.classList.add('selected'));
+      document.getElementById('selectAllBtn').textContent = '✕ Deselect All';
+    }
+  }
+
+  function clearPdf() {
+    document.getElementById('pdfInput').value = '';
+    document.getElementById('pdfPreview').classList.remove('show');
+    document.getElementById('pdfPages').classList.remove('show');
+    document.getElementById('selectAllBtn').style.display = 'none';
+    pdfImages = [];
+    selectedPages.clear();
+    setStep(2);
+  }
+
+  // ── Image handling ─────────────────────────────────────
+  function handleImg(input) {
+    const file = input.files[0];
+    if (!file) return;
+    imgFile = file;
+    document.getElementById('imgName').textContent = file.name;
+    document.getElementById('imgPreview').classList.add('show');
+    hideUploadError();
+    setStep(3);
+  }
+
+  function clearImg() {
+    document.getElementById('imgInput').value = '';
+    document.getElementById('imgPreview').classList.remove('show');
+    imgFile = null;
+    setStep(2);
+  }
+
+  // ── Drag & drop ────────────────────────────────────────
+  ['dropPdf', 'dropImg'].forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('dragover'); });
+    el.addEventListener('dragleave', () => el.classList.remove('dragover'));
+    el.addEventListener('drop', e => {
+      e.preventDefault(); el.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (!file) return;
+      if (id === 'dropPdf') { document.getElementById('pdfInput').files; handlePdf({ files: [file] }); }
+      else { imgFile = file; handleImg({ files: [file] }); }
+    });
+  });
+
+  // ── Step indicator ─────────────────────────────────────
+  function setStep(n) {
+    for (let i = 1; i <= 4; i++) {
+      const el = document.getElementById('step' + i);
+      el.classList.remove('active', 'done');
+      if (i < n)  el.classList.add('done');
+      if (i === n) el.classList.add('active');
+    }
+  }
+
+  // ── Progress steps ─────────────────────────────────────
+  function setProgress(step) {
+    for (let i = 1; i <= 4; i++) {
+      const el = document.getElementById('prog' + i);
+      el.classList.remove('active', 'done');
+      if (i < step)  el.classList.add('done');
+      if (i === step) el.classList.add('active');
+    }
+  }
+
+  // ── Errors ─────────────────────────────────────────────
+  function showUploadError(msg) {
+    const box = document.getElementById('uploadError');
+    document.getElementById('uploadErrorText').textContent = msg;
+    box.classList.add('show');
+  }
+
+  function hideUploadError() {
+    document.getElementById('uploadError').classList.remove('show');
+  }
+
+  // ── Extract ────────────────────────────────────────────
+  async function extract() {
+    const apiKey = document.getElementById('apiKey').value.trim();
+    hideUploadError();
+
+    if (!apiKey) { showUploadError('Please enter your Groq API key.'); return; }
+
+    // Determine what to send
+    let imagesToProcess = [];
+
+    if (activeTab === 'pdf') {
+      if (pdfImages.length === 0) { showUploadError('Please upload and convert a PDF first.'); return; }
+      if (selectedPages.size === 0) { showUploadError('Please select at least one page to extract.'); return; }
+      imagesToProcess = pdfImages.filter(p => selectedPages.has(p.page));
+    } else {
+      if (!imgFile) { showUploadError('Please upload an image.'); return; }
+      // Convert to base64
+      const b64 = await fileToBase64(imgFile);
+      imagesToProcess = [{ b64, mime: imgFile.type }];
+    }
+
+    // Show loading
+    setLoading(true);
+    document.getElementById('results').style.display = 'none';
+    document.getElementById('progressWrap').classList.add('show');
+    setStep(3);
+
+    // Animate progress
+    setProgress(1);
+    await sleep(600);
+    setProgress(2);
+    await sleep(400);
+    setProgress(3);
+
+    try {
+      // Use first selected page (or combine later)
+      const target = imagesToProcess[0];
+      const formData = new FormData();
+      formData.append('api_key', apiKey);
+      formData.append('provider', activeProvider);
+      formData.append('image_b64', target.b64);
+      formData.append('mime_type', target.mime || 'image/png');
+
+      const res  = await fetch('/extract', { method: 'POST', body: formData });
+      const json = await res.json();
+
+      setProgress(4);
+      await sleep(500);
+
+      if (!res.ok || json.error) {
+        showUploadError(json.error || 'Something went wrong.');
+      } else {
+        extractedData = json.data;
+        setStep(4);
+        document.getElementById('progressWrap').classList.remove('show');
+        renderResults(json.data);
+      }
+    } catch (e) {
+      showUploadError('Network error. Is the server running?');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function fileToBase64(file) {
+    return new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload = () => res(r.result.split(',')[1]);
+      r.onerror = rej;
+      r.readAsDataURL(file);
+    });
+  }
+
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  function setLoading(on) {
+    const btn = document.getElementById('extractBtn');
+    btn.disabled = on;
+    document.getElementById('spinner').style.display = on ? 'block' : 'none';
+    document.getElementById('btnIcon').style.display  = on ? 'none'  : 'block';
+    document.getElementById('btnText').textContent = on ? 'Analyzing with Groq Llama 4...' : 'Extract Invoice Data';
+  }
+
+  // ── Render Results ─────────────────────────────────────
+  function val(v) {
+    if (v === null || v === undefined || v === '') return '<span class="null-val">—</span>';
+    return String(v);
+  }
+
+  function renderResults(data) {
+    const el = document.getElementById('resultsContent');
+    el.innerHTML = '';
+
+    // ── Non-Tabular: Invoice Overview ──
+    el.innerHTML += makeSection('📋  Invoice Overview', [
+      ['Invoice Number', data.invoice_number],
+      ['Invoice Date',   data.invoice_date],
+      ['Due Date',       data.due_date],
+      ['PO Number',      data.po_number],
+      ['Currency',       data.currency],
+      ['Payment Terms',  data.payment_terms],
+      ['Payment Method', data.payment_method],
+    ], 'non-tabular');
+
+    // ── Non-Tabular: Vendor ──
+    const v = data.vendor || {};
+    el.innerHTML += makeSection('🏢  Vendor Details', [
+      ['Name',     v.name],
+      ['Address',  v.address],
+      ['Email',    v.email],
+      ['Phone',    v.phone],
+      ['Tax ID',   v.tax_id],
+    ], 'non-tabular');
+
+    // ── Non-Tabular: Billed To ──
+    const b = data.bill_to || {};
+    el.innerHTML += makeSection('📬  Billed To', [
+      ['Name',    b.name],
+      ['Address', b.address],
+      ['Email',   b.email],
+      ['Phone',   b.phone],
+    ], 'non-tabular');
+
+    // ── Tabular: Line Items ──
+    const items = data.line_items || [];
+    if (items.length > 0) {
+      el.innerHTML += `
+        <div class="result-section" style="animation-delay:0.2s">
+          <div class="section-header">
+            <div class="section-dot" style="background:var(--accent2)"></div>
+            📦  Line Items &nbsp;<span style="color:var(--muted);font-size:9px">[TABULAR DATA]</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Description</th>
+                  <th>Quantity</th>
+                  <th>Unit Price</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${items.map((item, i) => `
+                  <tr>
+                    <td class="mono" style="color:var(--muted)">${i + 1}</td>
+                    <td>${val(item.description)}</td>
+                    <td class="mono">${val(item.quantity)}</td>
+                    <td class="mono">${val(item.unit_price)}</td>
+                    <td class="mono" style="color:var(--accent2);font-weight:600">${val(item.total)}</td>
+                  </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>`;
+    }
+
+    // ── Totals ──
+    el.innerHTML += `
+      <div class="result-section" style="animation-delay:0.3s">
+        <div class="section-header">
+          <div class="section-dot" style="background:var(--accent3)"></div>
+          💰  Totals &amp; Payment
+        </div>
+        ${makeRow('Subtotal',       data.subtotal)}
+        ${makeRow('Tax Rate',       data.tax_rate)}
+        ${makeRow('Tax Amount',     data.tax_amount)}
+        ${makeRow('Discount',       data.discount)}
+        ${makeRow('Shipping',       data.shipping)}
+        ${makeRow('Bank Details',   data.bank_details)}
+        ${makeRow('Notes',          data.notes)}
+        <div class="totals-row grand">
+          <span class="total-label">TOTAL AMOUNT</span>
+          <span class="total-val">${val(data.total_amount)}</span>
+        </div>
+      </div>`;
+
+    document.getElementById('results').style.display = 'block';
+    document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function makeSection(title, fields, type) {
+    const tag = type === 'non-tabular'
+      ? `<span style="color:var(--muted);font-size:9px">[NON-TABULAR]</span>`
+      : '';
+    return `
+      <div class="result-section">
+        <div class="section-header">
+          <div class="section-dot"></div>
+          ${title} &nbsp;${tag}
+        </div>
+        <div class="fields-grid">
+          ${fields.map(([label, value]) => `
+            <div class="field">
+              <div class="field-label">${label}</div>
+              <div class="field-value">${val(value)}</div>
+            </div>`).join('')}
+        </div>
+      </div>`;
+  }
+
+  function makeRow(label, value) {
+    return `
+      <div class="totals-row">
+        <span class="total-label">${label}</span>
+        <span class="total-val mono">${val(value)}</span>
+      </div>`;
+  }
+
+  // ── Copy JSON ──────────────────────────────────────────
+  function copyJSON() {
+    if (!extractedData) return;
+    navigator.clipboard.writeText(JSON.stringify(extractedData, null, 2));
+    const btn = event.currentTarget;
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Copied!';
+    btn.style.color = 'var(--accent3)';
+    setTimeout(() => { btn.innerHTML = orig; btn.style.color = ''; }, 2000);
+  }
+
+  // ── Download Excel ─────────────────────────────────────
+  async function downloadExcel() {
+    if (!extractedData) return;
+    const btn = document.getElementById('downloadBtn');
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<div class="spinner" style="display:block;border-top-color:var(--accent3);width:14px;height:14px;border-width:2px"></div> Generating...';
+    btn.disabled = true;
+
+    try {
+      const res = await fetch('/download-excel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(extractedData)
+      });
+
+      if (!res.ok) { alert('Failed to generate Excel.'); return; }
+
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href = url;
+      a.download = `invoice_${extractedData.invoice_number || 'export'}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Downloaded!';
+      setTimeout(() => { btn.innerHTML = orig; btn.disabled = false; }, 2000);
+    } catch (e) {
+      alert('Error: ' + e.message);
+      btn.innerHTML = orig;
+      btn.disabled = false;
+    }
+  }
+  // ── PWA Service Worker & Install ──────────────────────
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => console.log('SW registered:', reg.scope))
+        .catch(err => console.log('SW failed:', err));
+    });
+  }
+
+  let deferredPrompt;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    const banner = document.getElementById('installBanner');
+    if (banner) banner.style.display = 'flex';
+  });
+
+  function installApp() {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then(choice => {
+        document.getElementById('installBanner').style.display = 'none';
+        deferredPrompt = null;
+      });
+    }
+  }
+
+  function dismissBanner() {
+    document.getElementById('installBanner').style.display = 'none';
+  }
+</script>
+</body>
+</html>
