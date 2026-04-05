@@ -27,13 +27,73 @@ FIELD_OPTIONS = [
     ("total_amount", "Total Amount"),
 ]
 
+# ───────────────── Color Palette (InvoiceNet-inspired) ─────────────────
+BG_DARK = "#303030"
+BG_PANEL = "#2b2b2b"
+BG_TOOLBAR = "#383838"
+BG_BORDER = "#404040"
+BG_CANVAS = "#404040"
+BG_CHECKBOX = "#333333"
+HIGHLIGHT = "#558de8"
+ACCENT = "#e0a050"
+TEXT_WHITE = "#ffffff"
+TEXT_LIGHT = "#dddddd"
+TEXT_DIM = "#aaaaaa"
+LOGGER_BG = "#002b36"
+LOGGER_FG = "#eee8d5"
+BTN_BG = "#484848"
+BTN_HOVER = "#558de8"
+EXTRACT_BG = "#00897B"
+EXTRACT_HOVER = "#26a69a"
+
+
+class ToolTip:
+    """Tooltip on hover for any widget."""
+    def __init__(self, widget, text):
+        self.widget = widget
+        self.text = text
+        self.tw = None
+        self.widget.bind("<Enter>", self._show)
+        self.widget.bind("<Leave>", self._hide)
+
+    def _show(self, event=None):
+        x = self.widget.winfo_rootx() + 30
+        y = self.widget.winfo_rooty() + 25
+        self.tw = tk.Toplevel(self.widget)
+        self.tw.wm_overrideredirect(True)
+        self.tw.wm_geometry(f"+{x}+{y}")
+        lbl = tk.Label(self.tw, text=self.text, bg="#ffffe0", fg="#333",
+                       font=("Segoe UI", 9), relief="solid", borderwidth=1, padx=6, pady=3)
+        lbl.pack()
+
+    def _hide(self, event=None):
+        if self.tw:
+            self.tw.destroy()
+            self.tw = None
+
+
+class IconButton(tk.Button):
+    """Dark flat icon button with hover highlight and tooltip."""
+    def __init__(self, master, text="", tooltip="", command=None, width=50, height=44, **kw):
+        super().__init__(master, text=text, command=command,
+                         bg=BG_DARK, fg=TEXT_WHITE, activebackground=HIGHLIGHT,
+                         activeforeground=TEXT_WHITE, bd=0, highlightthickness=0,
+                         font=("Segoe UI", 14), width=3, relief="flat",
+                         cursor="hand2", **kw)
+        self.default_bg = BG_DARK
+        self.bind("<Enter>", lambda e: self.config(bg=HIGHLIGHT))
+        self.bind("<Leave>", lambda e: self.config(bg=self.default_bg))
+        if tooltip:
+            ToolTip(self, tooltip)
+
+
 class InvoiceExtractorApp(ctk.CTk):
     def __init__(self):
         super().__init__()
 
         self.title("Invoice Extractor")
-        self.geometry("1280x800")
-        self.minsize(1024, 700)
+        self.geometry("1360x820")
+        self.minsize(1100, 700)
 
         # State variables
         self.file_path = None
@@ -44,168 +104,295 @@ class InvoiceExtractorApp(ctk.CTk):
         self.result_data = None
         self.zoom_level = 1.0
         self.field_vars = {}
-        self.displayed_image = None  # keep reference
+        self.displayed_image = None
 
         self.build_ui()
 
-    # ────────────────── UI Construction ──────────────────
+    # ═══════════════════════════════════════════════════════
+    # UI Construction — 3-Column InvoiceNet-style Layout
+    # ═══════════════════════════════════════════════════════
     def build_ui(self):
-        self.grid_columnconfigure(0, weight=3)
-        self.grid_columnconfigure(1, weight=2)
+        self.grid_columnconfigure(0, weight=0)   # left icon toolbar
+        self.grid_columnconfigure(1, weight=3)   # center PDF viewer
+        self.grid_columnconfigure(2, weight=2)   # right control panel
         self.grid_rowconfigure(0, weight=1)
 
-        # ═══ LEFT PANEL — PDF / Image Viewer ═══
-        self.left_panel = ctk.CTkFrame(self, corner_radius=0, fg_color="#2b2b2b")
-        self.left_panel.grid(row=0, column=0, sticky="nsew")
-        self.left_panel.grid_rowconfigure(1, weight=1)
-        self.left_panel.grid_columnconfigure(0, weight=1)
+        self._build_left_toolbar()
+        self._build_center_viewer()
+        self._build_right_panel()
 
-        # — Top toolbar —
-        self.toolbar = ctk.CTkFrame(self.left_panel, height=40, fg_color="#3c3c3c", corner_radius=0)
-        self.toolbar.grid(row=0, column=0, sticky="ew")
-        self.toolbar.grid_columnconfigure(1, weight=1)
+    # ────────────────── LEFT: Icon Toolbar ──────────────────
+    def _build_left_toolbar(self):
+        self.left_toolbar = tk.Frame(self, bg=BG_DARK, width=60, bd=0,
+                                     highlightbackground=BG_BORDER, highlightthickness=1)
+        self.left_toolbar.grid(row=0, column=0, sticky="ns")
+        self.left_toolbar.grid_propagate(False)
+        self.left_toolbar.configure(width=60)
 
-        # Navigation buttons
-        nav_frame = ctk.CTkFrame(self.toolbar, fg_color="transparent")
-        nav_frame.grid(row=0, column=0, padx=8, pady=4)
+        self.left_toolbar.columnconfigure(0, weight=1)
 
-        self.btn_first = ctk.CTkButton(nav_frame, text="|◀", width=30, height=28, fg_color="#555", hover_color="#777", command=self.first_page)
-        self.btn_first.pack(side="left", padx=2)
-        self.btn_prev = ctk.CTkButton(nav_frame, text="◀", width=30, height=28, fg_color="#555", hover_color="#777", command=self.prev_page)
-        self.btn_prev.pack(side="left", padx=2)
+        # Top section — main tools
+        top_tools = tk.Frame(self.left_toolbar, bg=BG_DARK, bd=0)
+        top_tools.pack(side="top", fill="x", pady=(6, 0))
 
-        self.page_label = ctk.CTkLabel(nav_frame, text="Page 0 of 0", font=ctk.CTkFont(size=12), text_color="#ddd")
+        IconButton(top_tools, text="📂", tooltip="Open File",
+                   command=self.browse_file).pack(pady=2, padx=4, fill="x")
+        IconButton(top_tools, text="📁", tooltip="Open Directory",
+                   command=self.browse_directory).pack(pady=2, padx=4, fill="x")
+        IconButton(top_tools, text="💾", tooltip="Save Excel",
+                   command=self.save_excel).pack(pady=2, padx=4, fill="x")
+
+        sep1 = tk.Frame(top_tools, bg=BG_BORDER, height=1)
+        sep1.pack(fill="x", padx=8, pady=6)
+
+        IconButton(top_tools, text="🧹", tooltip="Clear Page",
+                   command=self._clear_page).pack(pady=2, padx=4, fill="x")
+        IconButton(top_tools, text="📋", tooltip="Copy JSON",
+                   command=self.copy_json_to_clipboard).pack(pady=2, padx=4, fill="x")
+
+        sep2 = tk.Frame(top_tools, bg=BG_BORDER, height=1)
+        sep2.pack(fill="x", padx=8, pady=6)
+
+        # File navigation (prev/next file for multi-file)
+        file_nav = tk.Frame(top_tools, bg=BG_DARK, bd=0)
+        file_nav.pack(pady=2, padx=4, fill="x")
+        file_nav.columnconfigure(0, weight=1)
+        file_nav.columnconfigure(1, weight=1)
+
+        btn_prev_f = tk.Button(file_nav, text="◀", bg=BG_DARK, fg=TEXT_WHITE,
+                               activebackground=HIGHLIGHT, bd=0, font=("Segoe UI", 11),
+                               cursor="hand2", command=self.prev_page)
+        btn_prev_f.grid(row=0, column=0, sticky="ew")
+        btn_next_f = tk.Button(file_nav, text="▶", bg=BG_DARK, fg=TEXT_WHITE,
+                               activebackground=HIGHLIGHT, bd=0, font=("Segoe UI", 11),
+                               cursor="hand2", command=self.next_page)
+        btn_next_f.grid(row=0, column=1, sticky="ew")
+
+        self.file_counter_label = tk.Label(file_nav, text="0 of 0", bg=BG_DARK,
+                                           fg=TEXT_DIM, font=("Segoe UI", 8))
+        self.file_counter_label.grid(row=1, column=0, columnspan=2, pady=(2, 0))
+
+        # Bottom — help / about
+        bottom_tools = tk.Frame(self.left_toolbar, bg=BG_DARK, bd=0)
+        bottom_tools.pack(side="bottom", fill="x", pady=(0, 8))
+
+        IconButton(bottom_tools, text="❓", tooltip="Help",
+                   command=self._show_help).pack(pady=2, padx=4, fill="x")
+
+    # ────────────────── CENTER: PDF Viewer ──────────────────
+    def _build_center_viewer(self):
+        center = tk.Frame(self, bg=BG_PANEL, bd=0,
+                          highlightbackground=BG_BORDER, highlightthickness=1)
+        center.grid(row=0, column=1, sticky="nsew")
+        center.grid_rowconfigure(1, weight=1)
+        center.grid_columnconfigure(0, weight=1)
+
+        # — Page toolbar —
+        page_tools = tk.Frame(center, bg=BG_TOOLBAR, height=36, bd=0,
+                              highlightbackground=BG_BORDER, highlightthickness=1)
+        page_tools.grid(row=0, column=0, sticky="ew")
+        page_tools.grid_columnconfigure(1, weight=1)
+
+        # Navigation cluster (left side)
+        nav = tk.Frame(page_tools, bg=BG_TOOLBAR, bd=0)
+        nav.grid(row=0, column=0, padx=6, pady=3)
+
+        for txt, cmd in [("⏮", self.first_page), ("◀", self.prev_page)]:
+            b = tk.Button(nav, text=txt, bg=BG_TOOLBAR, fg=TEXT_WHITE,
+                          activebackground=HIGHLIGHT, bd=0, font=("Segoe UI", 10),
+                          cursor="hand2", command=cmd)
+            b.pack(side="left", padx=1)
+            b.bind("<Enter>", lambda e, w=b: w.config(bg=HIGHLIGHT))
+            b.bind("<Leave>", lambda e, w=b: w.config(bg=BG_TOOLBAR))
+
+        self.page_label = tk.Label(nav, text="Page 0 of 0", bg=BG_TOOLBAR,
+                                   fg=TEXT_WHITE, font=("Segoe UI", 9))
         self.page_label.pack(side="left", padx=8)
 
-        self.btn_next = ctk.CTkButton(nav_frame, text="▶", width=30, height=28, fg_color="#555", hover_color="#777", command=self.next_page)
-        self.btn_next.pack(side="left", padx=2)
-        self.btn_last = ctk.CTkButton(nav_frame, text="▶|", width=30, height=28, fg_color="#555", hover_color="#777", command=self.last_page)
-        self.btn_last.pack(side="left", padx=2)
+        for txt, cmd in [("▶", self.next_page), ("⏭", self.last_page)]:
+            b = tk.Button(nav, text=txt, bg=BG_TOOLBAR, fg=TEXT_WHITE,
+                          activebackground=HIGHLIGHT, bd=0, font=("Segoe UI", 10),
+                          cursor="hand2", command=cmd)
+            b.pack(side="left", padx=1)
+            b.bind("<Enter>", lambda e, w=b: w.config(bg=HIGHLIGHT))
+            b.bind("<Leave>", lambda e, w=b: w.config(bg=BG_TOOLBAR))
 
-        # Zoom controls
-        zoom_frame = ctk.CTkFrame(self.toolbar, fg_color="transparent")
-        zoom_frame.grid(row=0, column=1, padx=8, pady=4, sticky="e")
+        # Zoom cluster (right side)
+        zoom = tk.Frame(page_tools, bg=BG_TOOLBAR, bd=0)
+        zoom.grid(row=0, column=1, padx=6, pady=3, sticky="e")
 
-        self.btn_zoom_in = ctk.CTkButton(zoom_frame, text="+", width=30, height=28, fg_color="#555", hover_color="#777", command=self.zoom_in)
-        self.btn_zoom_in.pack(side="left", padx=2)
-        self.btn_zoom_out = ctk.CTkButton(zoom_frame, text="−", width=30, height=28, fg_color="#555", hover_color="#777", command=self.zoom_out)
-        self.btn_zoom_out.pack(side="left", padx=2)
-        self.zoom_label = ctk.CTkLabel(zoom_frame, text="100%", font=ctk.CTkFont(size=12), text_color="#ddd")
+        for txt, cmd in [("🔍+", self.zoom_in), ("🔍−", self.zoom_out)]:
+            b = tk.Button(zoom, text=txt, bg=BG_TOOLBAR, fg=TEXT_WHITE,
+                          activebackground=HIGHLIGHT, bd=0, font=("Segoe UI", 10),
+                          cursor="hand2", command=cmd)
+            b.pack(side="left", padx=1)
+            b.bind("<Enter>", lambda e, w=b: w.config(bg=HIGHLIGHT))
+            b.bind("<Leave>", lambda e, w=b: w.config(bg=BG_TOOLBAR))
+
+        self.zoom_label = tk.Label(zoom, text="100%", bg=BG_TOOLBAR,
+                                   fg=TEXT_WHITE, font=("Segoe UI", 9))
         self.zoom_label.pack(side="left", padx=8)
 
-        # — Canvas for document display —
-        self.canvas_frame = ctk.CTkFrame(self.left_panel, fg_color="#4a4a4a", corner_radius=0)
-        self.canvas_frame.grid(row=1, column=0, sticky="nsew")
-        self.canvas_frame.grid_rowconfigure(0, weight=1)
-        self.canvas_frame.grid_columnconfigure(0, weight=1)
+        b_fit = tk.Button(zoom, text="⊞", bg=BG_TOOLBAR, fg=TEXT_WHITE,
+                          activebackground=HIGHLIGHT, bd=0, font=("Segoe UI", 11),
+                          cursor="hand2", command=self._fit_to_screen)
+        b_fit.pack(side="left", padx=1)
+        b_fit.bind("<Enter>", lambda e, w=b_fit: w.config(bg=HIGHLIGHT))
+        b_fit.bind("<Leave>", lambda e, w=b_fit: w.config(bg=BG_TOOLBAR))
+        ToolTip(b_fit, "Fit to Screen")
 
-        self.canvas = tk.Canvas(self.canvas_frame, bg="#3a3a3a", highlightthickness=0)
+        # — Canvas —
+        canvas_frame = tk.Frame(center, bg=BG_CANVAS, bd=0)
+        canvas_frame.grid(row=1, column=0, sticky="nsew")
+        canvas_frame.grid_rowconfigure(0, weight=1)
+        canvas_frame.grid_columnconfigure(0, weight=1)
+
+        self.canvas = tk.Canvas(canvas_frame, bg=BG_CANVAS, highlightthickness=0, cursor="cross")
         self.canvas.grid(row=0, column=0, sticky="nsew")
 
-        self.v_scroll = tk.Scrollbar(self.canvas_frame, orient="vertical", command=self.canvas.yview)
+        self.v_scroll = tk.Scrollbar(canvas_frame, orient="vertical", command=self.canvas.yview,
+                                     bg=BG_DARK, highlightbackground=HIGHLIGHT, troughcolor=BG_DARK)
         self.v_scroll.grid(row=0, column=1, sticky="ns")
-        self.h_scroll = tk.Scrollbar(self.canvas_frame, orient="horizontal", command=self.canvas.xview)
+        self.h_scroll = tk.Scrollbar(canvas_frame, orient="horizontal", command=self.canvas.xview,
+                                     bg=BG_DARK, highlightbackground=HIGHLIGHT, troughcolor=BG_DARK)
         self.h_scroll.grid(row=1, column=0, sticky="ew")
         self.canvas.configure(yscrollcommand=self.v_scroll.set, xscrollcommand=self.h_scroll.set)
 
-        # Mouse wheel scroll
         self.canvas.bind("<MouseWheel>", self._on_mousewheel)
-        # Auto-fit on resize
         self.canvas.bind("<Configure>", self._on_canvas_resize)
 
-        # Page indicator at bottom-left
-        self.bottom_bar = ctk.CTkFrame(self.left_panel, height=28, fg_color="#3c3c3c", corner_radius=0)
-        self.bottom_bar.grid(row=2, column=0, sticky="ew")
-        self.page_indicator = ctk.CTkLabel(self.bottom_bar, text="", font=ctk.CTkFont(size=11), text_color="#aaa")
-        self.page_indicator.pack(side="left", padx=10)
+    # ────────────────── RIGHT: Controls & Results ──────────────────
+    def _build_right_panel(self):
+        right = tk.Frame(self, bg=BG_DARK, bd=0,
+                         highlightbackground=BG_BORDER, highlightthickness=1)
+        right.grid(row=0, column=2, sticky="nsew")
+        right.grid_columnconfigure(0, weight=1)
+        right.grid_rowconfigure(5, weight=1)  # logger expands
 
-        # ═══ RIGHT PANEL — Controls & Results ═══
-        self.right_panel = ctk.CTkFrame(self, corner_radius=0, fg_color="#1e1e2e")
-        self.right_panel.grid(row=0, column=1, sticky="nsew")
-        self.right_panel.grid_rowconfigure(4, weight=1)
-        self.right_panel.grid_columnconfigure(0, weight=1)
+        # ── Logo / Title ──
+        logo_frame = tk.Frame(right, bg=BG_DARK, bd=0,
+                              highlightbackground=BG_BORDER, highlightthickness=1)
+        logo_frame.grid(row=0, column=0, sticky="ew")
+        logo_frame.grid_columnconfigure(0, weight=1)
 
-        # — Branding header —
-        header_frame = ctk.CTkFrame(self.right_panel, fg_color="transparent")
-        header_frame.grid(row=0, column=0, sticky="ew", padx=20, pady=(20, 10))
-        ctk.CTkLabel(header_frame, text="Invoice Extractor", font=ctk.CTkFont(size=28, weight="bold"), text_color="#e0a050").pack(side="left", padx=(0, 10))
+        title_inner = tk.Frame(logo_frame, bg=BG_DARK)
+        title_inner.pack(pady=14)
+        tk.Label(title_inner, text="⚡", bg=BG_DARK, fg=ACCENT,
+                 font=("Segoe UI", 28)).pack(side="left", padx=(0, 8))
+        tk.Label(title_inner, text="Invoice Extractor", bg=BG_DARK, fg=TEXT_WHITE,
+                 font=("Segoe UI", 22, "bold")).pack(side="left")
 
-        # — API Key (compact) —
-        api_frame = ctk.CTkFrame(self.right_panel, fg_color="transparent")
-        api_frame.grid(row=1, column=0, sticky="ew", padx=20, pady=(0, 10))
-        ctk.CTkLabel(api_frame, text="API Key:", font=ctk.CTkFont(size=12, weight="bold"), text_color="#ccc").pack(side="left", padx=(0, 8))
-        self.api_entry = ctk.CTkEntry(api_frame, show="*", placeholder_text="gsk_...", height=32, border_color="#4a4a6a")
-        self.api_entry.pack(side="left", fill="x", expand=True)
+        # ── API Key ──
+        api_frame = tk.Frame(right, bg=BG_DARK, bd=0, padx=16, pady=8)
+        api_frame.grid(row=1, column=0, sticky="ew")
+        api_frame.grid_columnconfigure(1, weight=1)
 
-        # — Field checkboxes —
-        field_frame = ctk.CTkFrame(self.right_panel, fg_color="#292940", corner_radius=8)
-        field_frame.grid(row=2, column=0, sticky="ew", padx=20, pady=(0, 10))
-        ctk.CTkLabel(field_frame, text="Field:", font=ctk.CTkFont(size=13, weight="bold"), text_color="#ccc").grid(row=0, column=0, columnspan=4, sticky="w", padx=12, pady=(10, 5))
+        tk.Label(api_frame, text="API Key:", bg=BG_DARK, fg=TEXT_LIGHT,
+                 font=("Segoe UI", 11, "bold")).grid(row=0, column=0, padx=(0, 8), sticky="w")
+        self.api_entry = ctk.CTkEntry(api_frame, show="*", placeholder_text="gsk_...",
+                                      height=30, border_color="#4a4a6a", fg_color="#1e1e2e",
+                                      text_color=TEXT_LIGHT)
+        self.api_entry.grid(row=0, column=1, sticky="ew")
+
+        # ── Field Checkboxes ──
+        field_outer = tk.Frame(right, bg=BG_DARK, bd=0,
+                               highlightbackground=BG_BORDER, highlightthickness=1)
+        field_outer.grid(row=2, column=0, sticky="ew", padx=12, pady=(4, 4))
+
+        tk.Label(field_outer, text="Fields:", bg=BG_CHECKBOX, fg=TEXT_WHITE,
+                 font=("Segoe UI", 12, "bold"), anchor="w").pack(fill="x", padx=10, pady=(8, 4))
+
+        checkbox_grid = tk.Frame(field_outer, bg=BG_CHECKBOX, bd=0)
+        checkbox_grid.pack(fill="x", padx=10, pady=(0, 8))
+        checkbox_grid.columnconfigure(0, weight=1)
+        checkbox_grid.columnconfigure(1, weight=1)
 
         for i, (key, label) in enumerate(FIELD_OPTIONS):
-            var = ctk.BooleanVar(value=True)
+            var = tk.BooleanVar(value=True)
             self.field_vars[key] = var
-            row_idx = 1 + i // 2
-            col_idx = (i % 2) * 2
-            cb = ctk.CTkCheckBox(field_frame, text=label, variable=var, font=ctk.CTkFont(size=12),
-                                 fg_color="#2196F3", hover_color="#42A5F5", border_color="#666",
-                                 text_color="#ddd", checkbox_width=20, checkbox_height=20)
-            cb.grid(row=row_idx, column=col_idx, columnspan=2, sticky="w", padx=12, pady=4)
+            row_idx = i // 2
+            col_idx = i % 2
+            cb = tk.Checkbutton(checkbox_grid, text=label, variable=var,
+                                bg=BG_CHECKBOX, fg=TEXT_LIGHT, selectcolor=BG_DARK,
+                                activebackground=BG_CHECKBOX, activeforeground=TEXT_WHITE,
+                                font=("Segoe UI", 11), anchor="w", highlightthickness=0)
+            cb.grid(row=row_idx, column=col_idx, sticky="w", padx=(4, 12), pady=2)
 
-        field_frame.grid_columnconfigure(0, weight=1)
-        field_frame.grid_columnconfigure(2, weight=1)
+        # ── Extract Button (prominent) ──
+        extract_frame = tk.Frame(right, bg=BG_DARK, bd=0)
+        extract_frame.grid(row=3, column=0, sticky="ew", padx=16, pady=(8, 4))
+        extract_frame.grid_columnconfigure(0, weight=1)
 
-        # — Buttons row: Browse + Extract —
-        btn_row = ctk.CTkFrame(self.right_panel, fg_color="transparent")
-        btn_row.grid(row=3, column=0, sticky="ew", padx=20, pady=(0, 10))
-        btn_row.grid_columnconfigure(0, weight=1)
-        btn_row.grid_columnconfigure(1, weight=1)
+        self.extract_btn = tk.Button(extract_frame, text="⚡  Extract", bg=EXTRACT_BG, fg=TEXT_WHITE,
+                                     activebackground=EXTRACT_HOVER, activeforeground=TEXT_WHITE,
+                                     font=("Segoe UI", 13, "bold"), bd=0, cursor="hand2",
+                                     relief="flat", height=2, command=self.start_extraction)
+        self.extract_btn.grid(row=0, column=0, sticky="ew")
+        self.extract_btn.bind("<Enter>", lambda e: self.extract_btn.config(bg=EXTRACT_HOVER))
+        self.extract_btn.bind("<Leave>", lambda e: self.extract_btn.config(bg=EXTRACT_BG))
 
-        self.browse_btn = ctk.CTkButton(btn_row, text="Open File", fg_color="#555", hover_color="#777",
-                                        height=40, font=ctk.CTkFont(size=14), command=self.browse_file)
-        self.browse_btn.grid(row=0, column=0, sticky="ew", padx=(0, 5))
+        # ── Status ──
+        self.status_label = tk.Label(right, text="", bg=BG_DARK, fg=TEXT_DIM,
+                                     font=("Segoe UI", 10), anchor="w")
+        self.status_label.grid(row=4, column=0, sticky="ew", padx=18, pady=(2, 0))
 
-        self.extract_btn = ctk.CTkButton(btn_row, text="Extract", fg_color="#00897B", hover_color="#00AB9A",
-                                         height=40, font=ctk.CTkFont(size=14, weight="bold"), command=self.start_extraction)
-        self.extract_btn.grid(row=0, column=1, sticky="ew", padx=(5, 0))
+        # ── Logger / Results (Solarized dark) ──
+        logger_frame = tk.Frame(right, bg=BG_DARK, bd=0,
+                                highlightbackground=BG_BORDER, highlightthickness=1)
+        logger_frame.grid(row=5, column=0, sticky="nsew", padx=12, pady=(6, 8))
+        logger_frame.grid_rowconfigure(0, weight=1)
+        logger_frame.grid_columnconfigure(0, weight=1)
 
-        self.status_label = ctk.CTkLabel(self.right_panel, text="", text_color="gray", font=ctk.CTkFont(size=11))
-        self.status_label.grid(row=3, column=0, sticky="w", padx=20, pady=(42, 0))
+        self.textbox = tk.Text(logger_frame, bg=LOGGER_BG, fg=LOGGER_FG,
+                               insertbackground=LOGGER_FG, font=("Consolas", 12),
+                               wrap="word", bd=0, relief="flat", padx=10, pady=8)
+        self.textbox.grid(row=0, column=0, sticky="nsew")
+        log_scroll = tk.Scrollbar(logger_frame, orient="vertical", command=self.textbox.yview,
+                                  bg=BG_DARK, troughcolor=LOGGER_BG)
+        log_scroll.grid(row=0, column=1, sticky="ns")
+        self.textbox.configure(yscrollcommand=log_scroll.set)
 
-        # — Results text area —
-        self.textbox = ctk.CTkTextbox(self.right_panel, font=ctk.CTkFont(family="Consolas", size=13),
-                                      fg_color="#0d1117", text_color="#58d1c9", wrap="word", corner_radius=6,
-                                      border_color="#333", border_width=1)
-        self.textbox.grid(row=4, column=0, sticky="nsew", padx=20, pady=(5, 10))
-        self.textbox.insert("0.0", "Open an invoice PDF or image, then click Extract.\nResults will appear here.")
+        self.textbox.insert("1.0", "Open an invoice PDF or image, then click Extract.\nResults will appear here.")
         self.textbox.configure(state="disabled")
 
-        # — Bottom action buttons —
-        bottom_btns = ctk.CTkFrame(self.right_panel, fg_color="transparent")
-        bottom_btns.grid(row=5, column=0, sticky="ew", padx=20, pady=(0, 20))
-        bottom_btns.grid_columnconfigure(0, weight=1)
-        bottom_btns.grid_columnconfigure(1, weight=1)
+        # ── Bottom Buttons ──
+        bottom = tk.Frame(right, bg=BG_DARK, bd=0)
+        bottom.grid(row=6, column=0, sticky="ew", padx=12, pady=(0, 12))
+        bottom.grid_columnconfigure(0, weight=1)
+        bottom.grid_columnconfigure(1, weight=1)
 
-        self.save_btn = ctk.CTkButton(bottom_btns, text="Save Information", fg_color="#555", hover_color="#777",
-                                      height=40, font=ctk.CTkFont(size=13), command=self.save_excel, state="disabled")
-        self.save_btn.grid(row=0, column=0, sticky="ew", padx=(0, 5))
+        self.save_btn = tk.Button(bottom, text="💾  Save Information", bg=BTN_BG, fg=TEXT_WHITE,
+                                  activebackground=HIGHLIGHT, font=("Segoe UI", 11, "bold"),
+                                  bd=0, cursor="hand2", relief="flat", height=2,
+                                  state="disabled", command=self.save_excel)
+        self.save_btn.grid(row=0, column=0, sticky="ew", padx=(0, 4))
 
-        self.copy_btn = ctk.CTkButton(bottom_btns, text="Copy JSON", fg_color="#00897B", hover_color="#00AB9A",
-                                      height=40, font=ctk.CTkFont(size=13), command=self.copy_json_to_clipboard, state="disabled")
-        self.copy_btn.grid(row=0, column=1, sticky="ew", padx=(5, 0))
+        self.copy_btn = tk.Button(bottom, text="📋  Copy JSON", bg=BTN_BG, fg=TEXT_WHITE,
+                                  activebackground=HIGHLIGHT, font=("Segoe UI", 11, "bold"),
+                                  bd=0, cursor="hand2", relief="flat", height=2,
+                                  state="disabled", command=self.copy_json_to_clipboard)
+        self.copy_btn.grid(row=0, column=1, sticky="ew", padx=(4, 0))
 
-    # ────────────────── PDF Viewer Logic ──────────────────
+    # ════════════════════════════════════════════════════════
+    # PDF Viewer Logic
+    # ════════════════════════════════════════════════════════
     def _fit_zoom_to_canvas(self):
-        """Calculate zoom level to fit image width to canvas."""
         if not self.pdf_pil_images:
             return
         img = self.pdf_pil_images[self.current_page]
         canvas_w = self.canvas.winfo_width()
         if canvas_w > 1 and img.width > 0:
-            self.zoom_level = (canvas_w - 20) / img.width  # 20px padding
+            self.zoom_level = (canvas_w - 20) / img.width
+
+    def _fit_to_screen(self):
+        if not self.pdf_pil_images:
+            return
+        if hasattr(self, '_manual_zoom'):
+            del self._manual_zoom
+        self._fit_zoom_to_canvas()
+        self._render_current_page()
 
     def _on_canvas_resize(self, event=None):
-        """Re-fit image when canvas is resized (only if auto-fit)."""
         if self.pdf_pil_images and not hasattr(self, '_manual_zoom'):
             self._fit_zoom_to_canvas()
             self._render_current_page()
@@ -216,7 +403,6 @@ class InvoiceExtractorApp(ctk.CTk):
     def show_page(self):
         if not self.pdf_pil_images:
             return
-        # Auto-fit on first load
         self._fit_zoom_to_canvas()
         if hasattr(self, '_manual_zoom'):
             del self._manual_zoom
@@ -232,19 +418,18 @@ class InvoiceExtractorApp(ctk.CTk):
         self.displayed_image = ImageTk.PhotoImage(resized)
 
         canvas_w = self.canvas.winfo_width()
-        # Center image horizontally
         x_offset = max((canvas_w - w) // 2, 0)
 
         self.canvas.delete("all")
-        # White page background behind the image
         self.canvas.create_rectangle(x_offset, 10, x_offset + w, 10 + h, fill="white", outline="#555")
         self.canvas.create_image(x_offset, 10, anchor="nw", image=self.displayed_image)
         self.canvas.configure(scrollregion=(0, 0, max(canvas_w, w + 20), h + 20))
 
         self.page_label.configure(text=f"Page {self.current_page + 1} of {self.total_pages}")
-        self.page_indicator.configure(text=f"{self.current_page + 1} of {self.total_pages}")
         self.zoom_label.configure(text=f"{int(self.zoom_level * 100)}%")
+        self.file_counter_label.configure(text=f"{self.current_page + 1} of {self.total_pages}")
 
+    # ────────────────── Page Navigation ──────────────────
     def first_page(self):
         if self.total_pages:
             self.current_page = 0
@@ -283,15 +468,29 @@ class InvoiceExtractorApp(ctk.CTk):
                        ("Image Files", "*.jpg *.jpeg *.png *.webp")])
         if not path:
             return
+        self._load_file(path)
 
+    def browse_directory(self):
+        dir_path = filedialog.askdirectory(title="Select Directory Containing Invoices")
+        if not dir_path:
+            return
+        supported = {'.pdf', '.jpg', '.jpeg', '.png', '.webp'}
+        files = [os.path.join(dir_path, f) for f in sorted(os.listdir(dir_path))
+                 if os.path.splitext(f)[1].lower() in supported]
+        if not files:
+            messagebox.showinfo("No Files", "No supported files found in this directory.")
+            return
+        self._load_file(files[0])
+        self._log(f"Found {len(files)} file(s) in directory.")
+
+    def _load_file(self, path):
         self.file_path = path
         ext = os.path.splitext(path)[1].lower()
 
         if ext == ".pdf":
-            self.status_label.configure(text="Converting PDF...", text_color="#ff8c69")
+            self.status_label.configure(text="Converting PDF...", fg="#ff8c69")
             threading.Thread(target=self.process_pdf, args=(path,), daemon=True).start()
         else:
-            # Single image
             self.pdf_images = []
             img = Image.open(path)
             self.pdf_pil_images = [img]
@@ -301,7 +500,8 @@ class InvoiceExtractorApp(ctk.CTk):
                 self.pdf_images = [base64.b64encode(f.read()).decode()]
             self.zoom_level = 1.0
             self.show_page()
-            self.status_label.configure(text=f"Loaded: {os.path.basename(path)}", text_color="#4ecb8d")
+            self.status_label.configure(text=f"Loaded: {os.path.basename(path)}", fg="#4ecb8d")
+            self._log(f"Loaded image '{os.path.basename(path)}'")
 
     def process_pdf(self, path):
         try:
@@ -316,9 +516,10 @@ class InvoiceExtractorApp(ctk.CTk):
             self.zoom_level = 1.0
             self.after(0, self.show_page)
             self.after(0, lambda: self.status_label.configure(
-                text=f"Ready: {self.total_pages} page(s)", text_color="#4ecb8d"))
+                text=f"Ready: {self.total_pages} page(s)", fg="#4ecb8d"))
+            self.after(0, lambda: self._log(f"Loaded PDF '{os.path.basename(path)}' — {self.total_pages} page(s)"))
         except Exception as e:
-            self.after(0, lambda: self.status_label.configure(text="Error converting PDF", text_color="#e63946"))
+            self.after(0, lambda: self.status_label.configure(text="Error converting PDF", fg="#e63946"))
             self.after(0, lambda: messagebox.showerror("PDF Error", str(e)))
 
     # ────────────────── Extraction ──────────────────
@@ -332,10 +533,11 @@ class InvoiceExtractorApp(ctk.CTk):
             messagebox.showwarning("No Data", "Please open a PDF or image file first.")
             return
 
-        self.extract_btn.configure(state="disabled", text="Processing...")
+        self.extract_btn.configure(state="disabled", text="⏳  Processing...")
         self.save_btn.configure(state="disabled")
         self.copy_btn.configure(state="disabled")
-        self.status_label.configure(text="Analyzing via Groq AI...", text_color="white")
+        self.status_label.configure(text="Analyzing via Groq AI...", fg=TEXT_WHITE)
+        self._log("Extracting information from current page...")
 
         threading.Thread(target=self.run_extraction, args=(api_key,), daemon=True).start()
 
@@ -376,11 +578,23 @@ class InvoiceExtractorApp(ctk.CTk):
         else:
             display_data = self.result_data
 
-        json_str = json.dumps(display_data, indent=4)
+        json_str = json.dumps(display_data, indent=2, sort_keys=True)
+        self._log(json_str)
+
+    def _log(self, msg):
         self.textbox.configure(state="normal")
-        self.textbox.delete("0.0", "end")
-        self.textbox.insert("0.0", json_str)
+        self.textbox.insert("end", msg + "\n")
+        self.textbox.see("end")
         self.textbox.configure(state="disabled")
+
+    def _clear_page(self):
+        self.textbox.configure(state="normal")
+        self.textbox.delete("1.0", "end")
+        self.textbox.configure(state="disabled")
+        self.result_data = None
+        self.save_btn.configure(state="disabled")
+        self.copy_btn.configure(state="disabled")
+        self.status_label.configure(text="Cleared.", fg=TEXT_DIM)
 
     def copy_json_to_clipboard(self):
         if self.result_data:
@@ -402,12 +616,41 @@ class InvoiceExtractorApp(ctk.CTk):
             try:
                 build_excel(path, self.result_data)
                 messagebox.showinfo("Success", f"Excel report saved to:\n{path}")
+                self._log(f"Saved Excel to '{path}'")
             except Exception as e:
                 messagebox.showerror("Error Saving Excel", str(e))
 
     def reset_ui_state(self):
-        self.extract_btn.configure(state="normal", text="Extract")
-        self.status_label.configure(text="Extraction complete.", text_color="#4ecb8d")
+        self.extract_btn.configure(state="normal", text="⚡  Extract")
+        self.status_label.configure(text="Extraction complete.", fg="#4ecb8d")
+
+    def _show_help(self):
+        help_win = tk.Toplevel(self)
+        help_win.title("Help — Invoice Extractor")
+        help_win.configure(bg=BG_DARK)
+        help_win.geometry("500x400")
+        help_win.minsize(400, 300)
+        help_text = tk.Text(help_win, bg=LOGGER_BG, fg=LOGGER_FG, font=("Consolas", 11),
+                            wrap="word", bd=0, padx=14, pady=14)
+        help_text.pack(fill="both", expand=True, padx=10, pady=10)
+        help_text.insert("1.0",
+            "Invoice Extractor — Help\n"
+            "═══════════════════════════\n\n"
+            "1. Enter your Groq API key in the right panel.\n\n"
+            "2. Open a PDF or image invoice using the 📂 button\n"
+            "   or open a directory with 📁.\n\n"
+            "3. Select the fields you want to extract using the\n"
+            "   checkboxes.\n\n"
+            "4. Click '⚡ Extract' to analyze the current page.\n\n"
+            "5. Results appear in the logger below. You can:\n"
+            "   • Copy the JSON with 📋\n"
+            "   • Save to Excel with 💾\n\n"
+            "Navigation:\n"
+            "  ⏮ ◀  Page navigation  ▶ ⏭\n"
+            "  🔍+ / 🔍−  Zoom in / out\n"
+            "  ⊞  Fit to screen\n"
+        )
+        help_text.configure(state="disabled")
 
 if __name__ == "__main__":
     app = InvoiceExtractorApp()
