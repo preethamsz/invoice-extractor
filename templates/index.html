@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Invoice Extractor · Multi AI Provider</title>
+  <title>Ezerv Data Engine · AI Invoice Extractor</title>
 
   <!-- PWA Meta Tags -->
-  <meta name="theme-color" content="#e63946" />
+  <meta name="theme-color" content="#00897B" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="InvoiceAI" />
+  <meta name="apple-mobile-web-app-title" content="Ezerv Data Engine" />
   <link rel="manifest" href="/manifest.json" />
   <link rel="apple-touch-icon" href="/static/icon-192.png" />
   <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png" />
@@ -19,17 +19,17 @@
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&family=Manrope:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <style>
     :root {
-      --bg: #080810;
-      --surface: #0f0f1a;
-      --surface2: #161625;
-      --surface3: #1e1e30;
-      --border: #252538;
-      --accent: #e63946;
-      --accent2: #ff8c69;
-      --accent3: #4ecb8d;
-      --text: #eeeef5;
-      --muted: #7070a0;
-      --radius: 14px;
+      --bg: #f5f5f5;
+      --surface: #ffffff;
+      --surface2: #f9f9f9;
+      --surface3: #f0f0f0;
+      --border: #e0e0e0;
+      --accent: #00897B;
+      --accent2: #26a69a;
+      --accent3: #00897B;
+      --text: #212121;
+      --muted: #757575;
+      --radius: 12px;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -47,8 +47,8 @@
       position: fixed;
       inset: 0;
       background:
-        radial-gradient(ellipse 70% 50% at 10% 0%, rgba(230,57,70,0.08) 0%, transparent 55%),
-        radial-gradient(ellipse 50% 40% at 90% 100%, rgba(78,203,141,0.05) 0%, transparent 55%);
+        radial-gradient(ellipse 70% 50% at 10% 0%, rgba(0,137,123,0.03) 0%, transparent 55%),
+        radial-gradient(ellipse 50% 40% at 90% 100%, rgba(38,166,154,0.03) 0%, transparent 55%);
       pointer-events: none;
       z-index: 0;
     }
@@ -58,8 +58,8 @@
       content: '';
       position: fixed;
       inset: 0;
-      background-image: linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
-                        linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+      background-image: linear-gradient(rgba(0,0,0,0.02) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(0,0,0,0.02) 1px, transparent 1px);
       background-size: 40px 40px;
       pointer-events: none;
       z-index: 0;
@@ -68,9 +68,9 @@
     .container {
       position: relative;
       z-index: 1;
-      max-width: 1000px;
+      max-width: 900px;
       margin: 0 auto;
-      padding: 52px 24px 80px;
+      padding: 60px 24px 80px;
     }
 
     /* ── HEADER ── */
@@ -84,8 +84,8 @@
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      background: rgba(230,57,70,0.1);
-      border: 1px solid rgba(230,57,70,0.25);
+      background: rgba(0,137,123,0.1);
+      border: 1px solid rgba(0,137,123,0.25);
       color: var(--accent);
       font-family: 'JetBrains Mono', monospace;
       font-size: 10px;
@@ -105,11 +105,12 @@
 
     h1 {
       font-family: 'Syne', sans-serif;
-      font-size: clamp(40px, 7vw, 68px);
+      font-size: clamp(40px, 7vw, 64px);
       font-weight: 800;
       line-height: 1.05;
       letter-spacing: -0.03em;
       margin-bottom: 16px;
+      color: var(--text);
     }
 
     h1 .highlight {
@@ -145,8 +146,8 @@
     .step-num {
       width: 32px; height: 32px;
       border-radius: 50%;
-      background: var(--surface2);
-      border: 2px solid var(--border);
+      background: #f0f0f0;
+      border: 2px solid #00897B;
       color: var(--muted);
       font-family: 'JetBrains Mono', monospace;
       font-size: 12px;
@@ -161,12 +162,12 @@
       background: var(--accent);
       border-color: var(--accent);
       color: white;
-      box-shadow: 0 0 16px rgba(230,57,70,0.4);
+      box-shadow: 0 0 16px rgba(0,137,123,0.3);
     }
 
     .step-item.done .step-num {
-      background: var(--accent3);
-      border-color: var(--accent3);
+      background: #4db8a8;
+      border-color: #4db8a8;
       color: white;
     }
 
@@ -191,15 +192,16 @@
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 32px;
+      border-radius: 12px;
+      padding: 28px;
       margin-bottom: 20px;
       animation: fadeUp 0.6s ease both;
-      transition: border-color 0.3s;
+      transition: border-color 0.3s, box-shadow 0.3s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
     }
 
-    .card:hover { border-color: rgba(230,57,70,0.2); }
-    .card.active-card { border-color: rgba(230,57,70,0.35); }
+    .card:hover { border-color: rgba(0,137,123,0.3); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .card.active-card { border-color: rgba(0,137,123,0.35); }
 
     .card-header {
       display: flex;
@@ -210,8 +212,8 @@
 
     .card-num {
       width: 28px; height: 28px;
-      background: rgba(230,57,70,0.12);
-      border: 1px solid rgba(230,57,70,0.3);
+      background: rgba(0,137,123,0.12);
+      border: 1px solid rgba(0,137,123,0.3);
       border-radius: 8px;
       color: var(--accent);
       font-family: 'JetBrains Mono', monospace;
@@ -273,11 +275,11 @@
 
     input:focus {
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(230,57,70,0.12);
+      box-shadow: 0 0 0 3px rgba(0,137,123,0.12);
     }
 
     .toggle-btn {
-      background: var(--surface2);
+      background: #f5f5f5;
       border: 1px solid var(--border);
       color: var(--muted);
       border-radius: var(--radius);
@@ -291,7 +293,7 @@
       white-space: nowrap;
     }
 
-    .toggle-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .toggle-btn:hover { border-color: var(--accent); color: var(--accent); background: white; }
 
     .helper-text {
       font-size: 12px;
@@ -299,7 +301,7 @@
       margin-top: 10px;
     }
 
-    .helper-text a { color: var(--accent); text-decoration: none; }
+    .helper-text a { color: #00897B; text-decoration: none; font-weight: 600; }
     .helper-text a:hover { text-decoration: underline; }
 
     /* ── UPLOAD TABS ── */
@@ -312,8 +314,8 @@
     .tab-btn {
       flex: 1;
       padding: 12px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
+      background: #f9f9f9;
+      border: 1px solid #e0e0e0;
       border-radius: 10px;
       color: var(--muted);
       font-family: 'Manrope', sans-serif;
@@ -328,14 +330,15 @@
     }
 
     .tab-btn.active {
-      background: rgba(230,57,70,0.1);
-      border-color: rgba(230,57,70,0.4);
+      background: rgba(0,137,123,0.1);
+      border-color: rgba(0,137,123,0.4);
       color: var(--accent);
     }
 
     .tab-btn:hover:not(.active) {
       border-color: var(--accent);
       color: var(--text);
+      background: white;
     }
 
     .tab-panel { display: none; }
@@ -343,19 +346,20 @@
 
     /* ── DROP ZONE ── */
     .drop-zone {
-      border: 2px dashed var(--border);
-      border-radius: 16px;
+      border: 2px dashed #c0c0c0;
+      border-radius: 12px;
       padding: 44px 24px;
       text-align: center;
       cursor: pointer;
       transition: all 0.25s;
       position: relative;
       overflow: hidden;
+      background: #fafafa;
     }
 
     .drop-zone:hover, .drop-zone.dragover {
       border-color: var(--accent);
-      background: rgba(230,57,70,0.04);
+      background: rgba(0,137,123,0.04);
     }
 
     .drop-zone input[type="file"] {
@@ -369,8 +373,8 @@
 
     .drop-icon {
       width: 56px; height: 56px;
-      background: rgba(230,57,70,0.1);
-      border: 1px solid rgba(230,57,70,0.25);
+      background: rgba(0,137,123,0.1);
+      border: 1px solid rgba(0,137,123,0.25);
       border-radius: 16px;
       display: flex;
       align-items: center;
@@ -387,7 +391,7 @@
       display: none;
       align-items: center;
       gap: 12px;
-      background: var(--surface2);
+      background: #f9f9f9;
       border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 14px 18px;
@@ -395,7 +399,7 @@
     }
 
     .file-preview.show { display: flex; }
-    .file-preview svg { color: var(--accent3); flex-shrink: 0; }
+    .file-preview svg { color: #4db8a8; flex-shrink: 0; }
     .file-name { font-family: 'JetBrains Mono', monospace; font-size: 12px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .file-remove { color: var(--muted); cursor: pointer; transition: color 0.2s; font-size: 20px; line-height: 1; }
     .file-remove:hover { color: var(--accent); }
@@ -412,7 +416,7 @@
 
     .page-thumb {
       position: relative;
-      border: 2px solid var(--border);
+      border: 2px solid #d0d0d0;
       border-radius: 10px;
       overflow: hidden;
       cursor: pointer;
@@ -421,7 +425,7 @@
     }
 
     .page-thumb:hover { border-color: var(--accent); transform: translateY(-2px); }
-    .page-thumb.selected { border-color: var(--accent3); box-shadow: 0 0 12px rgba(78,203,141,0.3); }
+    .page-thumb.selected { border-color: #4db8a8; box-shadow: 0 4px 12px rgba(0,137,123,0.3); }
 
     .page-thumb img { width: 100%; display: block; }
 
@@ -455,7 +459,7 @@
     .page-thumb.selected .page-check { display: flex; }
 
     .select-all-btn {
-      background: transparent;
+      background: white;
       border: 1px solid var(--border);
       color: var(--muted);
       border-radius: 8px;
@@ -467,7 +471,7 @@
       margin-top: 12px;
     }
 
-    .select-all-btn:hover { border-color: var(--accent3); color: var(--accent3); }
+    .select-all-btn:hover { border-color: var(--accent); color: var(--accent); background: #f9f9f9; }
 
     /* ── BUTTONS ── */
     .btn-primary {
@@ -487,18 +491,19 @@
       justify-content: center;
       gap: 10px;
       letter-spacing: 0.02em;
+      box-shadow: 0 4px 12px rgba(0,137,123,0.2);
     }
 
     .btn-primary:hover:not(:disabled) {
-      background: #ff4d5a;
+      background: #00a394;
       transform: translateY(-2px);
-      box-shadow: 0 10px 36px rgba(230,57,70,0.4);
+      box-shadow: 0 8px 20px rgba(0,137,123,0.3);
     }
 
     .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
 
     .btn-secondary {
-      background: var(--surface2);
+      background: #f9f9f9;
       border: 1px solid var(--border);
       color: var(--text);
       border-radius: var(--radius);
@@ -513,12 +518,12 @@
       gap: 8px;
     }
 
-    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); background: white; }
 
     .btn-success {
-      background: rgba(78,203,141,0.12);
-      border: 1px solid rgba(78,203,141,0.3);
-      color: var(--accent3);
+      background: rgba(0,137,123,0.12);
+      border: 1px solid rgba(0,137,123,0.3);
+      color: var(--accent);
       border-radius: var(--radius);
       padding: 12px 20px;
       font-family: 'Manrope', sans-serif;
@@ -531,7 +536,7 @@
       gap: 8px;
     }
 
-    .btn-success:hover { background: rgba(78,203,141,0.2); }
+    .btn-success:hover { background: rgba(0,137,123,0.2); }
 
     /* ── SPINNER ── */
     .spinner {
@@ -545,24 +550,24 @@
 
     /* ── INFO / ERROR BOXES ── */
     .info-box {
-      background: rgba(230,57,70,0.07);
-      border: 1px solid rgba(230,57,70,0.2);
+      background: rgba(0,137,123,0.07);
+      border: 1px solid rgba(0,137,123,0.2);
       border-radius: 10px;
       padding: 14px 18px;
       margin-bottom: 16px;
       font-size: 13px;
-      color: var(--accent2);
+      color: #00695c;
       line-height: 1.6;
     }
 
-    .info-box a { color: var(--accent); }
+    .info-box a { color: var(--accent); font-weight: 600; }
 
     .error-box {
-      background: rgba(240,100,119,0.1);
-      border: 1px solid rgba(240,100,119,0.3);
+      background: rgba(244, 67, 54, 0.1);
+      border: 1px solid rgba(244, 67, 54, 0.3);
       border-radius: 10px;
       padding: 14px 18px;
-      color: #f06477;
+      color: #d32f2f;
       font-size: 13px;
       display: none;
       margin-top: 14px;
@@ -592,7 +597,7 @@
       align-items: center;
       gap: 12px;
       padding: 14px 18px;
-      background: var(--surface2);
+      background: #f9f9f9;
       border: 1px solid var(--border);
       border-radius: 10px;
       transition: all 0.3s;
@@ -602,20 +607,20 @@
     .progress-step.active {
       opacity: 1;
       border-color: var(--accent);
-      background: rgba(230,57,70,0.06);
+      background: rgba(0,137,123,0.06);
     }
 
     .progress-step.done {
       opacity: 1;
-      border-color: var(--accent3);
-      background: rgba(78,203,141,0.06);
+      border-color: #4db8a8;
+      background: rgba(0,137,123,0.1);
     }
 
     .progress-icon {
       width: 32px; height: 32px;
       border-radius: 50%;
-      background: var(--surface3);
-      border: 2px solid var(--border);
+      background: #f0f0f0;
+      border: 2px solid #c0c0c0;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -626,13 +631,13 @@
 
     .progress-step.active .progress-icon {
       border-color: var(--accent);
-      background: rgba(230,57,70,0.15);
+      background: rgba(0,137,123,0.15);
       animation: pulse-border 1.5s infinite;
     }
 
     .progress-step.done .progress-icon {
-      border-color: var(--accent3);
-      background: rgba(78,203,141,0.15);
+      border-color: #4db8a8;
+      background: rgba(0,137,123,0.15);
     }
 
     .progress-text { font-size: 13px; font-weight: 500; }
@@ -667,16 +672,17 @@
     .result-section {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 16px;
+      border-radius: 12px;
       overflow: hidden;
       margin-bottom: 16px;
       animation: slideIn 0.4s ease both;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
     }
 
     .section-header {
       padding: 14px 22px;
-      background: var(--surface2);
-      border-bottom: 1px solid var(--border);
+      background: #f9f9f9;
+      border-bottom: 1px solid #e0e0e0;
       font-family: 'JetBrains Mono', monospace;
       font-size: 10px;
       letter-spacing: 0.14em;
@@ -701,8 +707,8 @@
 
     .field {
       padding: 16px 22px;
-      border-right: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
+      border-right: 1px solid #e8e8e8;
+      border-bottom: 1px solid #e8e8e8;
     }
 
     .field-label {
@@ -722,7 +728,7 @@
       line-height: 1.4;
     }
 
-    .field-value.null-val { color: var(--muted); font-style: italic; font-size: 13px; font-weight: 400; }
+    .field-value.null-val { color: #999; font-style: italic; font-size: 13px; font-weight: 400; }
 
     /* Tabular table */
     .table-wrap { overflow-x: auto; }
@@ -745,13 +751,14 @@
     td {
       padding: 14px 22px;
       font-size: 14px;
-      border-bottom: 1px solid var(--border);
+      border-bottom: 1px solid #e8e8e8;
       font-weight: 400;
+      color: var(--text);
     }
 
-    tr:last-child td { border-bottom: none; }
-    tr:nth-child(even) td { background: rgba(255,255,255,0.015); }
-    tr:hover td { background: rgba(230,57,70,0.04); }
+    tr:last-child td { border-bottom: 1px solid var(--border); }
+    tr:nth-child(even) td { background: rgba(0,0,0,0.01); }
+    tr:hover td { background: rgba(0,137,123,0.04); }
     .mono { font-family: 'JetBrains Mono', monospace; font-size: 13px; }
 
     /* Totals */
@@ -760,18 +767,18 @@
       align-items: center;
       justify-content: space-between;
       padding: 14px 22px;
-      border-bottom: 1px solid var(--border);
+      border-bottom: 1px solid #e8e8e8;
     }
 
     .totals-row.grand {
-      background: rgba(230,57,70,0.06);
-      border-color: rgba(230,57,70,0.2);
+      background: rgba(0,137,123,0.06);
+      border-color: rgba(0,137,123,0.2);
     }
 
     .total-label { color: var(--muted); font-size: 13px; font-weight: 500; }
-    .total-val { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 600; }
+    .total-val { font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 600; color: var(--text); }
     .totals-row.grand .total-label { color: var(--text); font-size: 14px; font-weight: 700; }
-    .totals-row.grand .total-val { color: var(--accent); font-size: 20px; }
+    .totals-row.grand .total-val { color: var(--accent); font-size: 18px; }
 
     /* ── ANIMATIONS ── */
     @keyframes fadeUp {
@@ -785,8 +792,8 @@
     @keyframes spin { to { transform: rotate(360deg); } }
     @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
     @keyframes pulse-border {
-      0%,100% { box-shadow: 0 0 0 0 rgba(230,57,70,0.4); }
-      50%      { box-shadow: 0 0 0 6px rgba(230,57,70,0); }
+      0%,100% { box-shadow: 0 0 0 0 rgba(0,137,123,0.4); }
+      50%      { box-shadow: 0 0 0 6px rgba(0,137,123,0); }
     }
 
     @media (max-width: 600px) {
@@ -799,8 +806,8 @@
 
     /* ── PROVIDER CARDS ── */
     .provider-card {
-      background: var(--surface2);
-      border: 2px solid var(--border);
+      background: white;
+      border: 2px solid #e0e0e0;
       border-radius: 12px;
       padding: 14px 10px;
       cursor: pointer;
@@ -812,12 +819,13 @@
     .provider-card:hover {
       border-color: var(--accent);
       transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
 
     .provider-card.active {
       border-color: var(--accent);
-      background: rgba(230,57,70,0.08);
-      box-shadow: 0 0 16px rgba(230,57,70,0.2);
+      background: rgba(0,137,123,0.08);
+      box-shadow: 0 4px 12px rgba(0,137,123,0.2);
     }
 
     .p-logo {
@@ -855,15 +863,15 @@
     }
 
     .p-badge.free {
-      background: rgba(78,203,141,0.15);
-      color: var(--accent3);
-      border: 1px solid rgba(78,203,141,0.3);
+      background: rgba(0,137,123,0.15);
+      color: var(--accent);
+      border: 1px solid rgba(0,137,123,0.3);
     }
 
     .p-badge.paid {
-      background: rgba(255,140,105,0.15);
-      color: var(--accent2);
-      border: 1px solid rgba(255,140,105,0.3);
+      background: rgba(255,152,0,0.15);
+      color: #e65100;
+      border: 1px solid rgba(255,152,0,0.3);
     }
   </style>
 </head>
@@ -901,9 +909,9 @@
 
   <!-- HEADER -->
   <header>
-    <div class="badge"><div class="badge-dot"></div> Groq AI · Llama 4 · v2.0</div>
+    <div class="badge"><div class="badge-dot"></div> Ezerv Data Engine · v2.0</div>
     <h1>Invoice<br><span class="highlight">Extractor</span></h1>
-    <p class="subtitle">PDF to image conversion, real-time AI extraction, tabular & non-tabular output, Excel download — all in one flow.</p>
+    <p class="subtitle">Upload any invoice image or PDF and our AI instantly extracts all key data — vendor info, line items, totals, and more.</p>
   </header>
 
   <!-- STEP INDICATOR -->
@@ -932,8 +940,8 @@
   <!-- CARD 1: PROVIDER + API KEY -->
   <div class="card active-card" id="card1" style="animation-delay:0s">
     <div class="card-header">
-      <div class="card-num">01</div>
-      <div class="card-title">Choose AI Provider</div>
+      <div class="card-num">①</div>
+      <div class="card-title">Enter API Key</div>
       <div class="card-line"></div>
     </div>
 
@@ -1000,7 +1008,7 @@
 
     <!-- Provider info bar -->
     <div id="providerInfo" style="
-      background:var(--surface2); border:1px solid var(--border);
+      background: white; border:1px solid var(--border);
       border-radius:10px; padding:12px 16px; margin-bottom:16px;
       font-size:12px; color:var(--muted); line-height:1.7;
     "></div>
@@ -1016,14 +1024,14 @@
       <button class="toggle-btn" onclick="toggleKey()">Show</button>
     </div>
     <p class="helper-text">
-      Get your key at → <a id="keyLink" href="https://console.groq.com/keys" target="_blank">console.groq.com/keys</a> · Never stored.
+      Need an API Key? Get your free key at → <a id="keyLink" href="https://console.groq.com/keys" target="_blank">console.groq.com/keys</a> · Your key is never stored.
     </p>
   </div>
 
   <!-- CARD 2: UPLOAD -->
   <div class="card" id="card2" style="animation-delay:0.08s">
     <div class="card-header">
-      <div class="card-num">02</div>
+      <div class="card-num">②</div>
       <div class="card-title">Upload Invoice</div>
       <div class="card-line"></div>
     </div>
@@ -1032,18 +1040,18 @@
     <div class="upload-tabs">
       <button class="tab-btn active" id="tab-pdf" onclick="switchTab('pdf')">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-        PDF Invoice
+        📄 PDF
       </button>
       <button class="tab-btn" id="tab-img" onclick="switchTab('img')">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-        Image Invoice
+        🖼️ Image
       </button>
     </div>
 
     <!-- PDF TAB -->
     <div class="tab-panel active" id="panel-pdf">
       <div class="info-box">
-        📄 Upload a PDF invoice — we'll convert each page to an image automatically, then send it to Groq AI for extraction.
+        📄 Upload a PDF invoice — we'll convert each page to an image automatically.
       </div>
 
       <div class="drop-zone" id="dropPdf">
@@ -1053,8 +1061,8 @@
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
           </svg>
         </div>
-        <div class="drop-title">Drop PDF here</div>
-        <div class="drop-hint">PDF invoices · Auto-converted to images</div>
+        <div class="drop-title">Drop PDF here or click to upload</div>
+        <div class="drop-hint">PDF · Max 50 MB</div>
       </div>
 
       <div class="file-preview" id="pdfPreview">
@@ -1064,7 +1072,7 @@
       </div>
 
       <!-- Converting progress -->
-      <div id="pdfConverting" style="display:none; margin-top:14px; padding:14px 18px; background:var(--surface2); border:1px solid var(--border); border-radius:10px; font-size:13px; color:var(--muted); display:none; align-items:center; gap:10px;">
+      <div id="pdfConverting" style="display:none; margin-top:14px; padding:14px 18px; background:white; border:1px solid var(--border); border-radius:10px; font-size:13px; color:var(--muted); display:none; align-items:center; gap:10px;">
         <div class="spinner" style="display:block; border-top-color:var(--accent);"></div>
         <span>Converting PDF to images...</span>
       </div>
@@ -1083,8 +1091,8 @@
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
           </svg>
         </div>
-        <div class="drop-title">Drop image here</div>
-        <div class="drop-hint">JPG, PNG, WEBP · Max 10MB</div>
+        <div class="drop-title">Drop image here or click to upload</div>
+        <div class="drop-hint">JPG, PNG, WEBP · Max 10 MB</div>
       </div>
 
       <div class="file-preview" id="imgPreview">
@@ -1116,29 +1124,29 @@
       <div class="progress-step" id="prog1">
         <div class="progress-icon">🔑</div>
         <div>
-          <div class="progress-text">Authenticating with Groq</div>
-          <div class="progress-sub">Validating API key...</div>
+          <div class="progress-text">Validating API Key</div>
+          <div class="progress-sub">Authenticating...</div>
         </div>
       </div>
       <div class="progress-step" id="prog2">
         <div class="progress-icon">📤</div>
         <div>
-          <div class="progress-text">Sending invoice to AI</div>
-          <div class="progress-sub">Uploading image to Groq Llama 4...</div>
+          <div class="progress-text">Uploading Invoice</div>
+          <div class="progress-sub">Sending to AI...</div>
         </div>
       </div>
       <div class="progress-step" id="prog3">
         <div class="progress-icon">🧠</div>
         <div>
-          <div class="progress-text">AI analyzing invoice</div>
-          <div class="progress-sub">Extracting all fields...</div>
+          <div class="progress-text">Extracting Data</div>
+          <div class="progress-sub">AI analyzing invoice...</div>
         </div>
       </div>
       <div class="progress-step" id="prog4">
         <div class="progress-icon">✅</div>
         <div>
-          <div class="progress-text">Processing results</div>
-          <div class="progress-sub">Building tabular & non-tabular output...</div>
+          <div class="progress-text">Complete</div>
+          <div class="progress-sub">Ready to download...</div>
         </div>
       </div>
     </div>
@@ -1471,7 +1479,7 @@
     btn.disabled = on;
     document.getElementById('spinner').style.display = on ? 'block' : 'none';
     document.getElementById('btnIcon').style.display  = on ? 'none'  : 'block';
-    document.getElementById('btnText').textContent = on ? 'Analyzing with Groq Llama 4...' : 'Extract Invoice Data';
+    document.getElementById('btnText').textContent = on ? 'Extracting Invoice Data...' : 'Extract Invoice Data';
   }
 
   // ── Render Results ─────────────────────────────────────
@@ -1520,7 +1528,7 @@
       el.innerHTML += `
         <div class="result-section" style="animation-delay:0.2s">
           <div class="section-header">
-            <div class="section-dot" style="background:var(--accent2)"></div>
+            <div class="section-dot" style="background:var(--accent)"></div>
             📦  Line Items &nbsp;<span style="color:var(--muted);font-size:9px">[TABULAR DATA]</span>
           </div>
           <div class="table-wrap">
@@ -1553,7 +1561,7 @@
     el.innerHTML += `
       <div class="result-section" style="animation-delay:0.3s">
         <div class="section-header">
-          <div class="section-dot" style="background:var(--accent3)"></div>
+          <div class="section-dot" style="background:var(--accent)"></div>
           💰  Totals &amp; Payment
         </div>
         ${makeRow('Subtotal',       data.subtotal)}

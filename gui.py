@@ -15,7 +15,7 @@ from templates.core.ai_extractor import extract_invoice_data
 from templates.core.excel_utils import build_excel
 
 # Set the overall theme
-ctk.set_appearance_mode("dark")
+ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("blue")
 
 FIELD_OPTIONS = [
@@ -27,22 +27,22 @@ FIELD_OPTIONS = [
     ("total_amount", "Total Amount"),
 ]
 
-# ───────────────── Color Palette (InvoiceNet-inspired) ─────────────────
-BG_DARK = "#303030"
-BG_PANEL = "#2b2b2b"
-BG_TOOLBAR = "#383838"
-BG_BORDER = "#404040"
-BG_CANVAS = "#404040"
-BG_CHECKBOX = "#333333"
-HIGHLIGHT = "#558de8"
-ACCENT = "#e0a050"
-TEXT_WHITE = "#ffffff"
-TEXT_LIGHT = "#dddddd"
-TEXT_DIM = "#aaaaaa"
-LOGGER_BG = "#002b36"
-LOGGER_FG = "#eee8d5"
-BTN_BG = "#484848"
-BTN_HOVER = "#558de8"
+# ───────────────── Color Palette (Ezerv-inspired Light Theme) ─────────────────
+BG_DARK = "#f5f5f5"
+BG_PANEL = "#ffffff"
+BG_TOOLBAR = "#f9f9f9"
+BG_BORDER = "#e0e0e0"
+BG_CANVAS = "#fafafa"
+BG_CHECKBOX = "#ffffff"
+HIGHLIGHT = "#00897B"
+ACCENT = "#00897B"
+TEXT_WHITE = "#212121"
+TEXT_LIGHT = "#424242"
+TEXT_DIM = "#757575"
+LOGGER_BG = "#ffffff"
+LOGGER_FG = "#212121"
+BTN_BG = "#f5f5f5"
+BTN_HOVER = "#00897B"
 EXTRACT_BG = "#00897B"
 EXTRACT_HOVER = "#26a69a"
 
@@ -62,7 +62,7 @@ class ToolTip:
         self.tw = tk.Toplevel(self.widget)
         self.tw.wm_overrideredirect(True)
         self.tw.wm_geometry(f"+{x}+{y}")
-        lbl = tk.Label(self.tw, text=self.text, bg="#ffffe0", fg="#333",
+        lbl = tk.Label(self.tw, text=self.text, bg="#f0f0f0", fg="#212121",
                        font=("Segoe UI", 9), relief="solid", borderwidth=1, padx=6, pady=3)
         lbl.pack()
 
@@ -91,7 +91,7 @@ class InvoiceExtractorApp(ctk.CTk):
     def __init__(self):
         super().__init__()
 
-        self.title("Invoice Extractor")
+        self.title("Ezerv Data Engine - Invoice Extractor")
         self.geometry("1360x820")
         self.minsize(1100, 700)
 
@@ -251,10 +251,10 @@ class InvoiceExtractorApp(ctk.CTk):
         self.canvas.grid(row=0, column=0, sticky="nsew")
 
         self.v_scroll = tk.Scrollbar(canvas_frame, orient="vertical", command=self.canvas.yview,
-                                     bg=BG_DARK, highlightbackground=HIGHLIGHT, troughcolor=BG_DARK)
+                                     bg=BG_DARK, troughcolor=BG_PANEL)
         self.v_scroll.grid(row=0, column=1, sticky="ns")
         self.h_scroll = tk.Scrollbar(canvas_frame, orient="horizontal", command=self.canvas.xview,
-                                     bg=BG_DARK, highlightbackground=HIGHLIGHT, troughcolor=BG_DARK)
+                                     bg=BG_DARK, troughcolor=BG_PANEL)
         self.h_scroll.grid(row=1, column=0, sticky="ew")
         self.canvas.configure(yscrollcommand=self.v_scroll.set, xscrollcommand=self.h_scroll.set)
 
@@ -279,7 +279,7 @@ class InvoiceExtractorApp(ctk.CTk):
         title_inner.pack(pady=14)
         tk.Label(title_inner, text="⚡", bg=BG_DARK, fg=ACCENT,
                  font=("Segoe UI", 28)).pack(side="left", padx=(0, 8))
-        tk.Label(title_inner, text="Invoice Extractor", bg=BG_DARK, fg=TEXT_WHITE,
+        tk.Label(title_inner, text="Ezerv Data Engine", bg=BG_DARK, fg=TEXT_WHITE,
                  font=("Segoe UI", 22, "bold")).pack(side="left")
 
         # ── API Key ──
@@ -287,11 +287,11 @@ class InvoiceExtractorApp(ctk.CTk):
         api_frame.grid(row=1, column=0, sticky="ew")
         api_frame.grid_columnconfigure(1, weight=1)
 
-        tk.Label(api_frame, text="API Key:", bg=BG_DARK, fg=TEXT_LIGHT,
+        tk.Label(api_frame, text="API Key:", bg=BG_DARK, fg=TEXT_WHITE,
                  font=("Segoe UI", 11, "bold")).grid(row=0, column=0, padx=(0, 8), sticky="w")
         self.api_entry = ctk.CTkEntry(api_frame, show="*", placeholder_text="gsk_...",
-                                      height=30, border_color="#4a4a6a", fg_color="#1e1e2e",
-                                      text_color=TEXT_LIGHT)
+                                      height=30, border_color="#c0c0c0", fg_color="#ffffff",
+                                      text_color=TEXT_WHITE)
         self.api_entry.grid(row=0, column=1, sticky="ew")
 
         # ── Field Checkboxes ──
@@ -313,7 +313,7 @@ class InvoiceExtractorApp(ctk.CTk):
             row_idx = i // 2
             col_idx = i % 2
             cb = tk.Checkbutton(checkbox_grid, text=label, variable=var,
-                                bg=BG_CHECKBOX, fg=TEXT_LIGHT, selectcolor=BG_DARK,
+                                bg=BG_CHECKBOX, fg=TEXT_WHITE, selectcolor=BG_DARK,
                                 activebackground=BG_CHECKBOX, activeforeground=TEXT_WHITE,
                                 font=("Segoe UI", 11), anchor="w", highlightthickness=0)
             cb.grid(row=row_idx, column=col_idx, sticky="w", padx=(4, 12), pady=2)
@@ -348,7 +348,7 @@ class InvoiceExtractorApp(ctk.CTk):
                                wrap="word", bd=0, relief="flat", padx=10, pady=8)
         self.textbox.grid(row=0, column=0, sticky="nsew")
         log_scroll = tk.Scrollbar(logger_frame, orient="vertical", command=self.textbox.yview,
-                                  bg=BG_DARK, troughcolor=LOGGER_BG)
+                                  bg=BG_DARK, troughcolor=BG_PANEL)
         log_scroll.grid(row=0, column=1, sticky="ns")
         self.textbox.configure(yscrollcommand=log_scroll.set)
 
@@ -421,7 +421,7 @@ class InvoiceExtractorApp(ctk.CTk):
         x_offset = max((canvas_w - w) // 2, 0)
 
         self.canvas.delete("all")
-        self.canvas.create_rectangle(x_offset, 10, x_offset + w, 10 + h, fill="white", outline="#555")
+        self.canvas.create_rectangle(x_offset, 10, x_offset + w, 10 + h, fill="white", outline="#d0d0d0")
         self.canvas.create_image(x_offset, 10, anchor="nw", image=self.displayed_image)
         self.canvas.configure(scrollregion=(0, 0, max(canvas_w, w + 20), h + 20))
 
@@ -488,7 +488,7 @@ class InvoiceExtractorApp(ctk.CTk):
         ext = os.path.splitext(path)[1].lower()
 
         if ext == ".pdf":
-            self.status_label.configure(text="Converting PDF...", fg="#ff8c69")
+            self.status_label.configure(text="Converting PDF...", fg="#00897B")
             threading.Thread(target=self.process_pdf, args=(path,), daemon=True).start()
         else:
             self.pdf_images = []
